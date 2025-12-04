@@ -1,0 +1,202 @@
+# 하늘 약국 (GraceOn)
+
+AI 기반 성경 말씀 처방 앱 - Kotlin Compose Multiplatform + Clean Architecture + MVI
+
+## 📱 프로젝트 개요
+
+사용자의 고민을 듣고 AI(Gemini)가 적절한 성경 말씀과 위로의 메시지, 기도문을 제공하는 Android 앱입니다.
+
+## 🏗️ 아키텍처
+
+### Clean Architecture + MVI Pattern
+
+```
+app/                    # Application 진입점, DI, Navigation
+├── di/                # Koin DI 설정
+├── navigation/        # Navigation Graph
+└── MainActivity.kt
+
+feature/               # Feature 모듈 (UI Layer)
+├── feature-worry/    # 고민 선택 화면
+├── feature-gacha/    # 가챠 애니메이션
+└── feature-result/   # 결과 화면
+
+domain/               # Domain Layer (비즈니스 로직)
+├── model/           # 도메인 모델
+├── repository/      # Repository 인터페이스
+└── usecase/         # UseCase
+
+data/                # Data Layer
+└── repository/      # Repository 구현체
+
+core/                # Core 모듈
+├── core-ui/         # 디자인 시스템, 공통 UI 컴포넌트
+├── core-network/    # Ktor 클라이언트, API
+└── core-common/     # 공통 유틸리티
+
+build-logic/         # 컨벤션 플러그인
+└── convention/      # Gradle 컨벤션 플러그인
+```
+
+## 🔧 기술 스택
+
+### UI
+- **Jetpack Compose**: 선언형 UI
+- **Material3**: 디자인 시스템
+- **Navigation Compose**: 화면 전환
+
+### Architecture
+- **Clean Architecture**: 계층 분리
+- **MVI Pattern**: 단방향 데이터 흐름
+- **StateFlow**: 상태 관리
+
+### Network & Data
+- **Ktor Client**: HTTP 클라이언트
+- **Kotlinx Serialization**: JSON 직렬화
+- **Gemini API**: AI 처방 생성
+
+### DI & Async
+- **Koin**: 의존성 주입
+- **Coroutines**: 비동기 처리
+
+### Build
+- **Version Catalog**: 의존성 관리
+- **Convention Plugins**: 빌드 로직 재사용
+
+## 📦 모듈 의존성 그래프
+
+```
+app
+ ├─> feature-worry
+ ├─> feature-gacha
+ ├─> feature-result
+ │    └─> domain
+ │    └─> data
+ │         └─> core-network
+ │         └─> core-common
+ └─> core-ui
+      └─> core-common
+```
+
+## 🚀 시작하기
+
+### 1. API Key 설정
+
+`local.properties` 파일에 Gemini API Key를 추가하세요:
+
+```properties
+GEMINI_API_KEY=your_api_key_here
+```
+
+또는 `app/src/main/kotlin/com/graceon/di/AppModule.kt`에서 직접 설정:
+
+```kotlin
+single { 
+    GeminiApiClient(
+        apiKey = "YOUR_API_KEY"
+    ) 
+}
+```
+
+### 2. 빌드 및 실행
+
+```bash
+./gradlew :app:assembleDebug
+```
+
+## 📝 주요 기능
+
+### 1. 고민 선택
+- **카테고리 모드**: 진로/직장, 인간관계, 삶/미래, 신앙/마음
+- **AI 모드**: 자유롭게 고민 작성
+
+### 2. 가챠 애니메이션
+- 가챠 머신 애니메이션
+- AI가 말씀을 찾는 동안 로딩 표시
+
+### 3. 처방전 결과
+- 성경 말씀 + 위로 메시지
+- AI 기도문 생성
+- 처방전 공유 기능
+
+## 🎨 디자인 시스템
+
+모든 UI 컴포넌트와 테마는 `core-ui` 모듈에서 관리됩니다.
+
+### 컬러 팔레트
+- **Primary**: Indigo (#4F46E5)
+- **Secondary**: Purple (#9333EA)
+- **Category Colors**: Blue, Pink, Yellow, Purple gradients
+
+### 컴포넌트
+- `GradientCard`: 그라데이션 카드
+- `GraceOnTheme`: 앱 테마
+
+## 📐 MVI Pattern
+
+각 Feature는 다음 구조를 따릅니다:
+
+```kotlin
+// Contract
+object XxxContract {
+    data class State(...)           // UI 상태 (Immutable)
+    sealed interface Intent { ... } // 사용자 의도
+    sealed interface Effect { ... } // 일회성 이벤트
+}
+
+// ViewModel
+class XxxViewModel : ViewModel() {
+    val state: StateFlow<State>
+    val effect: Flow<Effect>
+    fun handleIntent(intent: Intent)
+}
+
+// Screen
+@Composable
+fun XxxScreen(viewModel: XxxViewModel)
+```
+
+## 🔒 규칙 준수 사항
+
+### ✅ 준수된 규칙
+1. ✅ build-logic 컨벤션 플러그인 사용
+2. ✅ 단방향 의존성 (feature → domain → data → core)
+3. ✅ StateFlow + immutable data class
+4. ✅ 디자인 시스템은 core-ui에서만 정의
+5. ✅ MVI 네이밍 (XxxViewModel, XxxIntent, XxxState)
+6. ✅ 모듈 build.gradle에 플러그인/버전 직접 추가 금지
+
+### ⚠️ TODO
+- [ ] API Key를 BuildConfig로 주입
+- [ ] 유닛 테스트 추가 (domain layer)
+- [ ] UI 테스트 추가
+
+## 🛠️ 개발 가이드
+
+### 새로운 Feature 추가 시
+
+1. `feature/feature-xxx` 모듈 생성
+2. `build.gradle.kts`에 컨벤션 플러그인 적용:
+   ```kotlin
+   plugins {
+       id("graceon.android.feature")
+   }
+   ```
+3. MVI Contract 정의
+4. ViewModel 구현
+5. Composable Screen 작성
+6. Navigation에 추가
+
+### 의존성 추가 시
+
+1. `gradle/libs.versions.toml`에 버전 정의
+2. 필요한 모듈의 `build.gradle.kts`에서 참조
+3. **절대 직접 버전 명시 금지**
+
+## 📄 라이선스
+
+MIT License
+
+## 👨‍💻 개발자
+
+Senior Android Developer
