@@ -38,7 +38,8 @@ class GeminiApiClient(
 
     suspend fun generateContent(prompt: String): String {
         val response = client.post {
-            url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent")
+            // Using Gemini 2.0 Flash Lite as requested (preview version)
+            url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
             parameter("key", apiKey)
             contentType(ContentType.Application.Json)
             setBody(
