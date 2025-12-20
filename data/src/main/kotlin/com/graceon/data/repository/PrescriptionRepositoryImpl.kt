@@ -1,5 +1,6 @@
 package com.graceon.data.repository
 
+import android.util.Log
 import com.graceon.core.common.DispatcherProvider
 import com.graceon.core.common.Result
 import com.graceon.core.network.GeminiApiClient
@@ -27,7 +28,7 @@ class PrescriptionRepositoryImpl(
         return withContext(dispatcherProvider.io) {
             try {
                 val worryText = worryContext.toPromptText()
-                
+
                 val prompt = """
                     User's worry context: "$worryText". 
                     
@@ -44,15 +45,34 @@ class PrescriptionRepositoryImpl(
                 """.trimIndent()
 
                 val responseText = geminiApiClient.generateContent(prompt)
-                
+
                 // JSON 파싱 (```json 제거)
                 val cleanJson = responseText
                     .replace("```json", "")
                     .replace("```", "")
                     .trim()
-                
+
                 val prescription = json.decodeFromString<Prescription>(cleanJson)
-                Result.Success(prescription)
+
+                // Clean up markdown list characters (+, -, *) if present
+                // 사용자의 피드백: 말씀 문구에 +가 계속 붙음 -> 모든 + 제거
+                Log.d("test", "verse: ${prescription.verse}")
+                Log.d("test", "message: ${prescription.message}")
+
+                val cleanPrescription = prescription.copy(
+                    verse = prescription.verse
+                        .replace(Regex("^[\\-*]\\s+"), "")
+                        .replace(Regex("\\n[\\-*]\\s+"), "\n")
+                        .replace(Regex("\\s+"), " ") // Collapse multiple spaces
+                        .trim(),
+                    message = prescription.message
+                        .replace(Regex("^[\\-*]\\s+"), "")
+                        .replace(Regex("\\n[\\-*]\\s+"), "\n")
+                        .replace(Regex("\\s+"), " ")
+                        .trim()
+                )
+                
+                Result.Success(cleanPrescription)
                 
             } catch (e: Exception) {
                 Result.Error(e)

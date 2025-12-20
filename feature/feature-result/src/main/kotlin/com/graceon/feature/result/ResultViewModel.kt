@@ -5,9 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.graceon.core.common.Result
 import com.graceon.domain.model.Prescription
+import com.graceon.domain.model.SavedPrescription
 import com.graceon.domain.model.WorryContext
 import com.graceon.domain.usecase.GeneratePrayerUseCase
-import com.graceon.feature.result.ResultContract
+import com.graceon.domain.usecase.SavePrescriptionUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,12 +16,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.util.UUID
 
 /**
  * ViewModel for Result Screen (MVI Pattern)
  */
 class ResultViewModel(
     private val generatePrayerUseCase: GeneratePrayerUseCase,
+    private val savePrescriptionUseCase: SavePrescriptionUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -48,6 +51,8 @@ class ResultViewModel(
         when (intent) {
             is ResultContract.Intent.GeneratePrayer -> generatePrayer()
             is ResultContract.Intent.SharePrescription -> sharePrescription()
+            is ResultContract.Intent.ShareAsImage -> shareAsImage()
+            is ResultContract.Intent.SavePrescription -> savePrescription()
             is ResultContract.Intent.Reset -> reset()
         }
     }
@@ -108,6 +113,30 @@ class ResultViewModel(
     private fun reset() {
         viewModelScope.launch {
             _effect.send(ResultContract.Effect.NavigateToHome)
+        }
+    }
+
+    private fun shareAsImage() {
+        viewModelScope.launch {
+            _effect.send(ResultContract.Effect.ShareAsImage)
+        }
+    }
+
+    private fun savePrescription() {
+        if (_state.value.isSaved) return
+
+        viewModelScope.launch {
+            val savedPrescription = SavedPrescription(
+                id = UUID.randomUUID().toString(),
+                verse = _state.value.prescription.verse,
+                message = _state.value.prescription.message,
+                prayer = _state.value.prayer?.text,
+                categoryId = categoryId
+            )
+            
+            savePrescriptionUseCase(savedPrescription)
+            _state.value = _state.value.copy(isSaved = true)
+            _effect.send(ResultContract.Effect.ShowSaveSuccess)
         }
     }
 }

@@ -1,0 +1,16 @@
+package com.graceon.domain.model
+
+import kotlinx.serialization.Serializable
+
+/**
+ * 저장된 처방전 모델
+ */
+@Serializable
+data class SavedPrescription(
+    val id: String,
+    val verse: String,
+    val message: String,
+    val prayer: String? = null,
+    val categoryId: String? = null,
+    val savedAt: Long = System.currentTimeMillis()
+)
