@@ -6,16 +6,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = IndigoPrimary,
-    secondary = IndigoSecondary,
-    tertiary = PurplePrimary,
+    primary = Primary,
+    onPrimary = TextOnPrimary,
+    primaryContainer = PrimaryContainer,
+    onPrimaryContainer = PrimaryDark,
+    secondary = Secondary,
+    onSecondary = TextOnPrimary,
+    secondaryContainer = SecondaryContainer,
+    onSecondaryContainer = SecondaryDark,
+    tertiary = Tertiary,
+    onTertiary = TextOnPrimary,
+    tertiaryContainer = TertiaryContainer,
+    onTertiaryContainer = Tertiary,
     background = BackgroundLight,
-    surface = SurfaceLight,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
     onBackground = TextPrimary,
+    surface = SurfaceLight,
     onSurface = TextPrimary,
+    surfaceVariant = CardElevated,
+    onSurfaceVariant = TextSecondary,
+    outline = TextTertiary,
+    error = ErrorColor,
+    onError = TextOnPrimary,
 )
 
 @Composable
