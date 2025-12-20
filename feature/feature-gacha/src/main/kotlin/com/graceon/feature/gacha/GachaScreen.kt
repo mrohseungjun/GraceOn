@@ -1,11 +1,13 @@
 package com.graceon.feature.gacha
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -17,17 +19,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.graceon.core.ui.theme.*
 import com.graceon.domain.model.Prescription
-import com.graceon.feature.gacha.GachaContract
 
 @Composable
 fun GachaScreen(
@@ -35,6 +36,7 @@ fun GachaScreen(
     onNavigateToResult: (Prescription, String?, String?, String?, Boolean) -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -49,52 +51,122 @@ fun GachaScreen(
                     )
                 }
                 is GachaContract.Effect.ShowError -> {
-                    // Show error toast/snackbar
+                    snackbarHostState.showSnackbar(effect.message)
                 }
             }
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF8F9FF),
-                        Color(0xFFE8EEFF)
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFEEF2FF),
+                            Color(0xFFE0E7FF)
+                        )
                     )
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(24.dp)
-        ) {
-            // Title with animation
-            val scale by animateFloatAsState(
-                targetValue = if (state.stage == GachaContract.State.Stage.Shaking) 1.05f else 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
                 ),
-                label = "title_scale"
-            )
-            
-            Text(
-                text = "🙏 하늘 약국",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color = IndigoPrimary,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .scale(scale)
-            )
-            
-            Text(
-                text = when (state.stage) {
+            contentAlignment = Alignment.Center
+        ) {
+            // Animated Background Particles
+            BackgroundParticles()
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(24.dp)
+            ) {
+                // Title Area
+                GachaHeader(state.stage)
+                
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // Machine Area
+                GachaMachine(
+                    stage = state.stage,
+                    onPull = { viewModel.handleIntent(GachaContract.Intent.PullLever) }
+                )
+            }
+
+            // Opening Effect Overlay
+            OpeningEffect(visible = state.stage == GachaContract.State.Stage.Opening)
+        }
+    }
+}
+
+@Composable
+private fun BackgroundParticles() {
+    val infiniteTransition = rememberInfiniteTransition(label = "background_particles")
+    
+    repeat(5) { index ->
+        val offsetY by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = -100f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3000 + index * 1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "particle_y_$index"
+        )
+        
+        val alpha by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = keyframes {
+                    durationMillis = 3000 + index * 1000
+                    0f at 0
+                    0.5f at 1500
+                    0f at 3000
+                },
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "particle_alpha_$index"
+        )
+
+        Box(
+            modifier = Modifier
+                .offset(
+                    x = ((index * 70) - 140).dp,
+                    y = offsetY.dp
+                )
+                .size(10.dp)
+                .background(
+                    color = if (index % 2 == 0) IndigoPrimary.copy(alpha = alpha * 0.3f) 
+                           else PurplePrimary.copy(alpha = alpha * 0.3f),
+                    shape = CircleShape
+                )
+        )
+    }
+}
+
+@Composable
+private fun GachaHeader(stage: GachaContract.State.Stage) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "🙏 하늘 약국",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = IndigoPrimary,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        
+        AnimatedContent(
+            targetState = stage,
+            transitionSpec = {
+                 fadeIn(animationSpec = tween(300)) + slideInVertically { 20 } togetherWith
+                        fadeOut(animationSpec = tween(300)) + slideOutVertically { -20 }
+            },
+            label = "header_text"
+        ) { targetStage ->
+              Text(
+                text = when (targetStage) {
                     GachaContract.State.Stage.Idle -> "마음을 담아 레버를 돌려주세요"
                     GachaContract.State.Stage.Shaking -> "AI가 당신을 위한 말씀을 찾고 있어요..."
                     GachaContract.State.Stage.Dispensing -> "처방전이 나오고 있어요!"
@@ -103,33 +175,8 @@ fun GachaScreen(
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-
-            GachaMachine(
-                stage = state.stage,
-                onPull = { viewModel.handleIntent(GachaContract.Intent.PullLever) }
-            )
-        }
-
-        // Flash effect when opening
-        AnimatedVisibility(
-            visible = state.stage == GachaContract.State.Stage.Opening,
-            enter = fadeIn(tween(800)),
-            exit = fadeOut(tween(400))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White,
-                                Color.White.copy(alpha = 0.8f),
-                                Color.Transparent
-                            )
-                        )
-                    )
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -153,8 +200,7 @@ private fun GachaMachine(
 
     Card(
         modifier = Modifier
-            .width(320.dp)
-            .padding(16.dp),
+            .width(320.dp),
         shape = RoundedCornerShape(32.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -163,205 +209,326 @@ private fun GachaMachine(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(24.dp)
         ) {
-            // Gacha Machine Body
             Box(
-                modifier = Modifier
-                    .width(280.dp)
-                    .height(360.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFFFAFAFA),
-                                Color(0xFFEEEEEE)
-                            )
-                        ),
-                        shape = RoundedCornerShape(topStart = 140.dp, topEnd = 140.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
-                    )
-                    .border(
-                        width = 3.dp,
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFFE0E0E0),
-                                Color(0xFFBDBDBD)
-                            )
-                        ),
-                        shape = RoundedCornerShape(topStart = 140.dp, topEnd = 140.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
-                    ),
                 contentAlignment = Alignment.TopCenter
             ) {
-            // Glass Dome
-            Box(
-                modifier = Modifier
-                    .padding(top = 16.dp)
-                    .size(240.dp)
-                    .background(
-                        color = Color(0xFFDCFCE7).copy(alpha = 0.5f),
-                        shape = CircleShape
-                    )
-                    .border(
-                        width = 4.dp,
-                        color = Color.White.copy(alpha = 0.4f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                // Capsules inside dome
-                this@Column.AnimatedVisibility(
-                    visible = stage != GachaContract.State.Stage.Dispensing && stage != GachaContract.State.Stage.Opening && stage != GachaContract.State.Stage.Complete
+                // Machine Body
+                MachineBody()
+                
+                // Content (Capsules)
+                Box(
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .size(240.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    val shakeOffset by animateFloatAsState(
-                        targetValue = if (stage == GachaContract.State.Stage.Shaking) 1f else 0f,
-                        animationSpec = if (stage == GachaContract.State.Stage.Shaking) {
-                            infiniteRepeatable(
-                                animation = tween(100),
-                                repeatMode = RepeatMode.Reverse
-                            )
-                        } else {
-                            tween(0)
-                        },
-                        label = "shake"
-                    )
+                    // Shaking Capsules
+                    if (stage != GachaContract.State.Stage.Dispensing && 
+                        stage != GachaContract.State.Stage.Opening && 
+                        stage != GachaContract.State.Stage.Complete) {
+                        
+                        val shakeOffset by animateFloatAsState(
+                            targetValue = if (stage == GachaContract.State.Stage.Shaking) 1f else 0f,
+                            animationSpec = if (stage == GachaContract.State.Stage.Shaking) {
+                                infiniteRepeatable(
+                                    animation = tween(100),
+                                    repeatMode = RepeatMode.Reverse
+                                )
+                            } else tween(0),
+                            label = "shake"
+                        )
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(x = (shakeOffset * 5).dp, y = (shakeOffset * 5).dp)
-                    ) {
-                        // Multiple capsules
-                        repeat(5) { index ->
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .offset(
+                        Box(
+                            modifier = Modifier
+                                .offset(x = (shakeOffset * 5).dp, y = (shakeOffset * 5).dp)
+                        ) {
+                            repeat(5) { index ->
+                                Capsule(
+                                    color = capsuleColors[index],
+                                    modifier = Modifier.offset(
                                         x = (index * 30 - 60).dp,
-                                        y = (index % 2 * 40 + 80).dp
+                                        y = (index % 2 * 40 - 20).dp
                                     )
-                                    .background(capsuleColors[index], CircleShape)
-                                    .border(2.dp, Color.Black.copy(alpha = 0.1f), CircleShape)
-                            )
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Machine Base
+            // Dropped Capsule
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(IndigoPrimary, IndigoSecondary)
-                        )
-                    ),
+                    .height(80.dp)
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                // Dispenser hole
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(Color(0xFF1F2937), CircleShape)
-                        .border(4.dp, Color(0xFF4B5563), CircleShape)
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = stage == GachaContract.State.Stage.Dispensing || stage == GachaContract.State.Stage.Opening,
+                    enter = slideInVertically { -100 } + fadeIn(),
+                    exit = scaleOut() + fadeOut()
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(48.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    Capsule(
+                        color = selectedCapsuleColor,
+                        modifier = Modifier.scale(1.2f)
                     )
                 }
             }
-        }
 
-        // Dropped Capsule Animation
-        AnimatedVisibility(
-            visible = stage == GachaContract.State.Stage.Dispensing || stage == GachaContract.State.Stage.Opening,
-            enter = slideInVertically(
-                initialOffsetY = { -200 },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Lever Button
+            LeverButton(
+                isIdle = stage == GachaContract.State.Stage.Idle,
+                isShaking = stage == GachaContract.State.Stage.Shaking,
+                onPull = onPull
+            )
+        }
+    }
+}
+
+@Composable
+private fun MachineBody() {
+    Box(
+        modifier = Modifier
+            .width(280.dp)
+            .height(360.dp)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFFFAFAFA), Color(0xFFE0E0E0))
+                ),
+                shape = RoundedCornerShape(topStart = 140.dp, topEnd = 140.dp, bottomStart = 32.dp, bottomEnd = 32.dp)
+            )
+            .border(
+                width = 4.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFFFFFFFF), Color(0xFFBDBDBD))
+                ),
+                shape = RoundedCornerShape(topStart = 140.dp, topEnd = 140.dp, bottomStart = 32.dp, bottomEnd = 32.dp)
+            )
+    ) {
+        // Glass Dome Background with Shine
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 16.dp)
+                .size(240.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFE0F2FE).copy(alpha = 0.4f),
+                            Color(0xFFDBEAFE).copy(alpha = 0.1f)
+                        )
+                    ),
+                    shape = CircleShape
                 )
-            ) + fadeIn(),
-            exit = scaleOut(targetScale = 5f) + fadeOut()
+                .border(
+                    width = 6.dp,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.2f))
+                    ),
+                    shape = CircleShape
+                )
         ) {
+            // Shine effect
             Box(
                 modifier = Modifier
-                    .padding(top = 16.dp)
-                    .size(64.dp)
-                    .background(selectedCapsuleColor, CircleShape)
-                    .border(4.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                    .size(80.dp)
+                    .offset(x = 40.dp, y = 40.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.8f), Color.Transparent)
+                        ),
+                        shape = CircleShape
+                    )
+            )
+        }
+
+        // Base
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(110.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            IndigoPrimary,
+                            IndigoSecondary
+                        )
+                    ),
+                    shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // Metallic trim
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFF94A3B8),
+                                Color(0xFFE2E8F0),
+                                Color(0xFF94A3B8)
+                            )
+                        )
+                    )
+            )
+
+            // Dispenser Hole
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color(0xFF374151), Color(0xFF111827))
+                        ),
+                        shape = CircleShape
+                    )
+                    .border(
+                        width = 4.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(Color(0xFF6B7280), Color(0xFF374151))
+                        ),
+                        shape = CircleShape
+                    )
             ) {
-                // Capsule split line
+                // Hole depth
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
                         .align(Alignment.Center)
-                        .background(Color.Black.copy(alpha = 0.1f))
+                        .size(56.dp)
+                        .background(Color.Black.copy(alpha = 0.7f), CircleShape)
                 )
             }
         }
+    }
+}
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Pull Lever Button
-            val rotation by animateFloatAsState(
-                targetValue = if (stage == GachaContract.State.Stage.Shaking) 90f else 0f,
-                animationSpec = tween(500),
-                label = "lever_rotation"
-            )
-
-            Button(
-                onClick = onPull,
-                enabled = stage == GachaContract.State.Stage.Idle,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .rotate(rotation),
-                shape = RoundedCornerShape(32.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = IndigoPrimary,
-                    disabledContainerColor = Color.Gray.copy(alpha = 0.3f)
+@Composable
+private fun Capsule(
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(40.dp)
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(color, color.copy(alpha = 0.8f))
                 ),
-                elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 8.dp,
-                    pressedElevation = 12.dp,
-                    disabledElevation = 0.dp
+                shape = CircleShape
+            )
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.3f),
+                shape = CircleShape
+            )
+    ) {
+        // Upper Highlight
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = 8.dp, y = 8.dp)
+                .size(12.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.8f), Color.Transparent)
+                    ),
+                    shape = CircleShape
                 )
+        )
+
+        // Split Line (Metallic)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .align(Alignment.Center)
+                .background(Color.White.copy(alpha = 0.2f))
+        )
+    }
+}
+
+@Composable
+private fun LeverButton(
+    isIdle: Boolean,
+    isShaking: Boolean,
+    onPull: () -> Unit
+) {
+    val rotation by animateFloatAsState(
+        targetValue = if (isShaking) 90f else 0f,
+        animationSpec = tween(500),
+        label = "lever_rotation"
+    )
+
+    Button(
+        onClick = onPull,
+        enabled = isIdle,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        shape = RoundedCornerShape(32.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent
+        ),
+        contentPadding = PaddingValues(0.dp),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 8.dp,
+            pressedElevation = 4.dp
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = if (isIdle) {
+                        Brush.horizontalGradient(colors = listOf(IndigoPrimary, PurplePrimary))
+                    } else {
+                        Brush.horizontalGradient(colors = listOf(Color.Gray, Color.Gray))
+                    },
+                    shape = RoundedCornerShape(32.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = null,
+                    tint = Color.White,
                     modifier = Modifier
                         .size(28.dp)
-                        .then(
-                            if (stage == GachaContract.State.Stage.Shaking) {
-                                Modifier.rotate(
-                                    animateFloatAsState(
-                                        targetValue = 360f,
-                                        animationSpec = infiniteRepeatable(
-                                            animation = tween(1000, easing = LinearEasing),
-                                            repeatMode = RepeatMode.Restart
-                                        ),
-                                        label = "spin"
-                                    ).value
-                                )
-                            } else Modifier
-                        )
+                        .rotate(rotation)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = when (stage) {
-                        GachaContract.State.Stage.Idle -> "✨ 고민 넣고 뽑기"
-                        GachaContract.State.Stage.Shaking -> "🔍 AI가 말씀을 찾는 중..."
-                        else -> "📋 처방 중..."
-                    },
+                    text = if (isShaking) "말씀을 찾는 중..." else "고민 넣고 뽑기",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun OpeningEffect(visible: Boolean) {
+    androidx.compose.animation.AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(500)),
+        exit = fadeOut(tween(500))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White.copy(alpha = 0.9f))
+        )
     }
 }

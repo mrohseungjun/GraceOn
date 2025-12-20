@@ -1,5 +1,6 @@
 package com.graceon.feature.gacha
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -95,12 +96,13 @@ class GachaViewModel(
                     )
                 }
                 is Result.Error -> {
+                    Log.e("GachaViewModel", "API Error", result.exception)
                     _state.value = _state.value.copy(
                         stage = GachaContract.State.Stage.Idle,
                         isLoading = false,
                         error = result.exception.message
                     )
-                    _effect.send(GachaContract.Effect.ShowError("죄송합니다. 잠시 후 다시 시도해주세요."))
+                    _effect.send(GachaContract.Effect.ShowError("오류가 발생했습니다: ${result.exception.message}"))
                 }
                 is Result.Loading -> {
                     // Should not happen
