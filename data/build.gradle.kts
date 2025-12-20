@@ -15,4 +15,7 @@ dependencies {
     implementation(libs.ktor.client.core)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
+    
+    // DataStore for local storage
+    implementation(libs.androidx.datastore.preferences)
 }

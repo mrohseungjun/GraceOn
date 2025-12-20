@@ -1,8 +1,13 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+
 plugins {
     id("graceon.android.application")
     id("graceon.android.compose")
     alias(libs.plugins.kotlin.serialization)
 }
+
 
 android {
     namespace = "com.graceon"
@@ -11,10 +16,10 @@ android {
         applicationId = "com.graceon"
         
         // Read GEMINI_API_KEY from local.properties
-        val localProperties = java.util.Properties()
+        val localProperties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
-            localProperties.load(java.io.FileInputStream(localPropertiesFile))
+            localProperties.load(FileInputStream(localPropertiesFile))
         }
         
         val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
@@ -32,9 +37,11 @@ android {
 
 dependencies {
     // Feature modules
+    implementation(project(":feature:feature-onboarding"))
     implementation(project(":feature:feature-worry"))
     implementation(project(":feature:feature-gacha"))
     implementation(project(":feature:feature-result"))
+    implementation(project(":feature:feature-saved"))
     
     // Core modules
     implementation(project(":core:core-ui"))

@@ -9,5 +9,6 @@ android {
 
 dependencies {
     implementation(project(":data"))
+    implementation(project(":core:core-common"))
     implementation(libs.kotlinx.serialization.json)
 }

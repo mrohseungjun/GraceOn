@@ -35,6 +35,8 @@ include(":domain")
 include(":data")
 
 // Feature modules
+include(":feature:feature-onboarding")
 include(":feature:feature-worry")
 include(":feature:feature-gacha")
 include(":feature:feature-result")
+include(":feature:feature-saved")
