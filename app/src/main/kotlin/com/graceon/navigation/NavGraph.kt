@@ -9,8 +9,11 @@ import androidx.navigation.navArgument
 import com.graceon.domain.model.Prescription
 import com.graceon.feature.gacha.GachaScreen
 import com.graceon.feature.gacha.GachaViewModel
+import com.graceon.feature.onboarding.OnboardingScreen
 import com.graceon.feature.result.ResultScreen
 import com.graceon.feature.result.ResultViewModel
+import com.graceon.feature.saved.SavedScreen
+import com.graceon.feature.saved.SavedViewModel
 import com.graceon.feature.worry.WorryScreen
 import com.graceon.feature.worry.WorryViewModel
 import kotlinx.serialization.encodeToString
@@ -25,12 +28,26 @@ import java.net.URLEncoder
  */
 @Composable
 fun NavGraph(
-    navController: NavHostController
+    navController: NavHostController,
+    startDestination: String = Screen.Onboarding.route,
+    onOnboardingComplete: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Worry.route
+        startDestination = startDestination
     ) {
+        // Onboarding Screen
+        composable(Screen.Onboarding.route) {
+            OnboardingScreen(
+                onComplete = {
+                    onOnboardingComplete()
+                    navController.navigate(Screen.Worry.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // Worry Selection Screen
         composable(Screen.Worry.route) {
             val viewModel: WorryViewModel = koinViewModel()
@@ -47,6 +64,9 @@ fun NavGraph(
                 },
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToSaved = {
+                    navController.navigate(Screen.Saved.route)
                 }
             )
         }
@@ -124,6 +144,17 @@ fun NavGraph(
                 }
             )
         }
+
+        // Saved Prescriptions Screen
+        composable(route = Screen.Saved.route) {
+            val viewModel: SavedViewModel = koinViewModel()
+            SavedScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
 }
 
@@ -131,7 +162,9 @@ fun NavGraph(
  * Screen Routes
  */
 sealed class Screen(val route: String) {
+    data object Onboarding : Screen("onboarding")
     data object Worry : Screen("worry")
+    data object Saved : Screen("saved")
     
     data object Gacha : Screen(
         "gacha?categoryId={categoryId}&detailId={detailId}&customWorry={customWorry}&isAiMode={isAiMode}"
