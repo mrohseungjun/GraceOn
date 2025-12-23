@@ -44,8 +44,8 @@ data class OnboardingPage(
 private val onboardingPages = listOf(
     OnboardingPage(
         emoji = "💊",
-        title = "하늘 약국에\n오신 것을 환영합니다",
-        description = "마음이 지칠 때, 위로가 필요할 때\nAI가 당신에게 꼭 맞는 말씀을 처방해드려요",
+        title = "힐링 말씀에\n오신 것을 환영합니다",
+        description = "마음이 지칠 때, 위로가 필요할 때\nAI가 당신에게 꼭 맞는 말씀을 말씀해드려요",
         gradientColors = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
     ),
     OnboardingPage(
@@ -56,14 +56,14 @@ private val onboardingPages = listOf(
     ),
     OnboardingPage(
         emoji = "✨",
-        title = "AI가 분석하여\n맞춤 처방을 드려요",
+        title = "AI가 분석하여\n맞춤 말씀을 드려요",
         description = "단순한 말씀 검색이 아닌\n당신의 상황에 맞는 깊은 위로를 전해드려요",
         gradientColors = listOf(Color(0xFFC084FC), Color(0xFFF472B6))
     ),
     OnboardingPage(
         emoji = "💜",
         title = "저장하고\n언제든 다시 보세요",
-        description = "마음에 드는 처방전은 저장하고\n힘들 때마다 꺼내보세요",
+        description = "마음에 드는 말씀은 저장하고\n힘들 때마다 꺼내보세요",
         gradientColors = listOf(Color(0xFFF472B6), Color(0xFFFB7185))
     )
 )

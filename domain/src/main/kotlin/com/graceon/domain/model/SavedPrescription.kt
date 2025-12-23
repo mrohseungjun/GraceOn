@@ -3,7 +3,7 @@ package com.graceon.domain.model
 import kotlinx.serialization.Serializable
 
 /**
- * 저장된 처방전 모델
+ * 저장된 말씀전 모델
  */
 @Serializable
 data class SavedPrescription(

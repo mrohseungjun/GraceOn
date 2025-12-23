@@ -3,7 +3,7 @@ package com.graceon.domain.model
 import kotlinx.serialization.Serializable
 
 /**
- * AI 처방전 결과 모델
+ * AI 말씀전 결과 모델
  */
 @Serializable
 data class Prescription(

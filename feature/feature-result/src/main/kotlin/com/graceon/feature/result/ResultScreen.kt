@@ -57,7 +57,7 @@ fun ResultScreen(
                         putExtra(Intent.EXTRA_TEXT, effect.text)
                         type = "text/plain"
                     }
-                    val shareIntent = Intent.createChooser(sendIntent, "처방전 공유하기")
+                    val shareIntent = Intent.createChooser(sendIntent, "말씀 공유하기")
                     context.startActivity(shareIntent)
                 }
                 is ResultContract.Effect.ShareAsImage -> {
@@ -65,7 +65,7 @@ fun ResultScreen(
                 }
                 is ResultContract.Effect.NavigateToHome -> onNavigateHome()
                 is ResultContract.Effect.ShowSaveSuccess -> {
-                    snackbarHostState.showSnackbar("처방전이 저장되었습니다!")
+                    snackbarHostState.showSnackbar("말씀이 저장되었습니다!")
                 }
                 is ResultContract.Effect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
@@ -188,7 +188,7 @@ fun ResultScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (state.isSaved) "저장됨" else "처방전 저장하기",
+                            text = if (state.isSaved) "저장됨" else "말씀 저장하기",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
@@ -280,20 +280,6 @@ private fun PrescriptionCard(
             Column(
                 modifier = Modifier.padding(24.dp)
             ) {
-                // Header with emoji
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "💊",
-                        fontSize = 32.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
                 // Title badge
                 Box(
                     modifier = Modifier
@@ -307,7 +293,7 @@ private fun PrescriptionCard(
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = if (state.isAiMode) "✨ AI 맞춤 처방" else "💜 오늘의 처방",
+                        text = if (state.isAiMode) "✨ AI 맞춤 말씀" else "💜 오늘의 말씀",
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Bold

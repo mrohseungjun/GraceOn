@@ -2,8 +2,11 @@ package com.graceon.feature.worry
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -14,6 +17,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.MailOutline
@@ -27,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,8 +79,21 @@ fun WorryScreen(
             AnimatedContent(
                 targetState = state.step,
                 transitionSpec = {
-                    slideInHorizontally { it } + fadeIn() togetherWith
-                            slideOutHorizontally { -it } + fadeOut()
+                    val targetIndex = targetState.stepIndex()
+                    val initialIndex = initialState.stepIndex()
+                    val forward = targetIndex >= initialIndex
+
+                    val enter = slideInHorizontally(
+                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
+                    ) { fullWidth -> if (forward) fullWidth else -fullWidth } +
+                        fadeIn(animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing))
+
+                    val exit = slideOutHorizontally(
+                        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing)
+                    ) { fullWidth -> if (forward) -fullWidth else fullWidth } +
+                        fadeOut(animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing))
+
+                    enter togetherWith exit using SizeTransform(clip = false)
                 },
                 label = "worry_step_transition"
             ) { step ->
@@ -95,7 +115,7 @@ fun WorryScreen(
                                 onSelectDetail = { viewModel.handleIntent(WorryContract.Intent.SelectDetail(it)) },
                                 onBack = { viewModel.handleIntent(WorryContract.Intent.NavigateBack) }
                             )
-                        }
+                        } ?: Box(modifier = Modifier.fillMaxSize())
                     }
                     WorryContract.State.Step.CustomInput -> CustomInputStep(
                         customWorry = state.customWorry,
@@ -107,6 +127,82 @@ fun WorryScreen(
             }
         }
     }
+}
+
+@Composable
+private fun WorryStepLayout(
+    onBack: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp, bottom = 20.dp)
+    ) {
+        if (onBack != null) {
+            WorryBackButton(onClick = onBack)
+            Spacer(modifier = Modifier.height(20.dp))
+        } else {
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+        content()
+    }
+}
+
+@Composable
+private fun WorryBackButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = "Back",
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun WorryHeader(
+    title: String,
+    subtitle: String?,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            lineHeight = 36.sp
+        )
+
+        if (!subtitle.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+private fun WorryContract.State.Step.stepIndex(): Int = when (this) {
+    WorryContract.State.Step.Intro -> 0
+    WorryContract.State.Step.CategorySelection -> 1
+    WorryContract.State.Step.DetailSelection -> 2
+    WorryContract.State.Step.CustomInput -> 3
 }
 
 @Composable
@@ -130,16 +226,10 @@ private fun IntroStep(
         label = "scale"
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    WorryStepLayout(onBack = null, modifier = Modifier.scale(scale)) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .scale(scale),
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -147,22 +237,22 @@ private fun IntroStep(
             Box(
                 modifier = Modifier
                     .size(120.dp)
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(32.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Edit,
+                    imageVector = Icons.Outlined.Favorite,
                     contentDescription = null,
                     modifier = Modifier.size(56.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Text(
-                text = "GraceOn",
+                text = "Grace Note",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -178,78 +268,81 @@ private fun IntroStep(
                 lineHeight = 24.sp
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Primary Button
-            Button(
-                onClick = onCategoryMode,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.MailOutline,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "고민 카테고리 선택",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Secondary Button
-            OutlinedButton(
-                onClick = onAiMode,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.secondary
-                ),
-                border = ButtonDefaults.outlinedButtonBorder
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.MailOutline,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "AI에게 고민 나누기",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Saved prescriptions link
-            TextButton(onClick = onSavedPrescriptions) {
-                Icon(
-                    imageVector = Icons.Outlined.MailOutline,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "저장된 말씀 보기",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            IntroActions(
+                onCategoryMode = onCategoryMode,
+                onAiMode = onAiMode,
+                onSavedPrescriptions = onSavedPrescriptions
+            )
         }
+    }
+}
+
+@Composable
+private fun IntroActions(
+    onCategoryMode: () -> Unit,
+    onAiMode: () -> Unit,
+    onSavedPrescriptions: () -> Unit
+) {
+    Button(
+        onClick = onCategoryMode,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "고민 카테고리 선택",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    FilledTonalButton(
+        onClick = onAiMode,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "AI에게 고민 나누기",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+
+    Spacer(modifier = Modifier.height(24.dp))
+
+    TextButton(onClick = onSavedPrescriptions) {
+        Text(
+            text = "저장된 말씀 보기",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
@@ -259,58 +352,36 @@ private fun CategorySelectionStep(
     onSelectCategory: (Category) -> Unit,
     onBack: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp)
+    WorryStepLayout(onBack = onBack) {
+        WorryHeader(
+            title = "어떤 고민이\n마음을 무겁게 하나요?",
+            subtitle = "카테고리를 선택해주세요"
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        CategoryGrid(
+            categories = categories,
+            onSelectCategory = onSelectCategory
+        )
+    }
+}
+
+@Composable
+private fun CategoryGrid(
+    categories: List<Category>,
+    onSelectCategory: (Category) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Back Button
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Icon(
-                Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onSurface
+        items(categories) { category ->
+            CategoryCard(
+                category = category,
+                onClick = { onSelectCategory(category) }
             )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = "어떤 고민이\n마음을 무겁게 하나요?",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            lineHeight = 36.sp
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "카테고리를 선택해주세요",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(categories) { category ->
-                CategoryCard(
-                    category = category,
-                    onClick = { onSelectCategory(category) }
-                )
-            }
         }
     }
 }
@@ -325,7 +396,7 @@ private fun CategoryCard(
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = bgColor),
         modifier = Modifier.height(140.dp)
     ) {
@@ -338,7 +409,7 @@ private fun CategoryCard(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(color.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -369,97 +440,121 @@ private fun DetailSelectionStep(
     val icon = category.iconType.toIcon()
     val (color, bgColor) = category.colorType.toCategoryColors()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // Back Button
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Icon(
-                Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Category Badge
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(bgColor)
-                .padding(horizontal = 12.dp, vertical = 6.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = color
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = category.title,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = color
-            )
-        }
+    WorryStepLayout(onBack = onBack) {
+        DetailHeader(
+            icon = icon,
+            color = color,
+            bgColor = bgColor,
+            title = category.title
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "조금 더 구체적으로\n알려주세요",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            lineHeight = 36.sp
+        WorryHeader(
+            title = "조금 더 구체적으로\n알려주세요",
+            subtitle = null
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        category.details.forEach { detail ->
+        DetailList(
+            details = category.details,
+            onSelectDetail = onSelectDetail,
+            modifier = Modifier.verticalScroll(rememberScrollState())
+        )
+    }
+}
+
+@Composable
+private fun DetailHeader(
+    icon: ImageVector,
+    color: Color,
+    bgColor: Color,
+    title: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(bgColor)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = color
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = color
+        )
+    }
+}
+
+@Composable
+private fun DetailList(
+    details: List<com.graceon.domain.model.DetailWorry>,
+    onSelectDetail: (com.graceon.domain.model.DetailWorry) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        details.forEach { detail ->
             Card(
                 onClick = { onSelectDetail(detail) },
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = 6.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = detail.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = detail.title,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "선택하면 다음 단계로 이동해요",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
                     Icon(
-                        imageVector = Icons.Default.MailOutline,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.outline
                     )
                 }
             }
         }
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
@@ -470,123 +565,100 @@ private fun CustomInputStep(
     onConfirm: () -> Unit,
     onBack: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp)
-    ) {
-        // Back Button
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Icon(
-                Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Header
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.MailOutline,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.secondary
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "AI에게 고민 나누기",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.secondary
-            )
-        }
+    WorryStepLayout(onBack = onBack) {
+        CustomInputHeader()
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "당신의 마음을\n들려주세요",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            lineHeight = 36.sp
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "구체적으로 적을수록 더 꼭 맞는 말씀이 나와요",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Text Input
-        OutlinedTextField(
-            value = customWorry,
-            onValueChange = onWorryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            placeholder = {
-                Text(
-                    text = "예: 요즘 취업 준비로 너무 불안하고 자존감이 낮아지는 것 같아...",
-                    color = MaterialTheme.colorScheme.outline
-                )
-            },
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            ),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                lineHeight = 26.sp
-            )
+        WorryHeader(
+            title = "당신의 마음을\n들려주세요",
+            subtitle = "구체적으로 적을수록 더 꼭 맞는 말씀이 나와요"
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Submit Button
-        Button(
-            onClick = onConfirm,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            enabled = customWorry.isNotBlank(),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Send,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+        CustomInputForm(
+            customWorry = customWorry,
+            onWorryChange = onWorryChange,
+            onConfirm = onConfirm
+        )
+    }
+}
+
+@Composable
+private fun CustomInputHeader() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = Icons.Outlined.MailOutline,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "AI에게 고민 나누기",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.secondary
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.CustomInputForm(
+    customWorry: String,
+    onWorryChange: (String) -> Unit,
+    onConfirm: () -> Unit
+) {
+    OutlinedTextField(
+        value = customWorry,
+        onValueChange = onWorryChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f),
+        placeholder = {
             Text(
-                text = "말씀 받으러 가기",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                text = "예: 요즘 취업 준비로 너무 불안하고 자존감이 낮아지는 것 같아...",
+                color = MaterialTheme.colorScheme.outline
             )
-        }
+        },
+        shape = RoundedCornerShape(18.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        ),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Button(
+        onClick = onConfirm,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        enabled = customWorry.isNotBlank(),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.Send,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "말씀 받으러 가기",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
 // Helper Extensions
 private fun IconType.toIcon(): ImageVector = when (this) {
-    IconType.BRIEFCASE -> Icons.Outlined.MailOutline
-    IconType.USER -> Icons.Outlined.MailOutline
-    IconType.SUN -> Icons.Outlined.MailOutline
+    IconType.BRIEFCASE -> Icons.Outlined.Create
+    IconType.USER -> Icons.Outlined.Person
+    IconType.SUN -> Icons.Outlined.WbSunny
     IconType.HEART -> Icons.Outlined.Favorite
 }
 

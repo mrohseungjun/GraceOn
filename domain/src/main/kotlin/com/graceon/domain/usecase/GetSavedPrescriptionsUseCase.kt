@@ -5,7 +5,7 @@ import com.graceon.domain.repository.SavedPrescriptionRepository
 import kotlinx.coroutines.flow.Flow
 
 /**
- * 저장된 처방전 목록 조회 UseCase
+ * 저장된 말씀전 목록 조회 UseCase
  */
 class GetSavedPrescriptionsUseCase(
     private val repository: SavedPrescriptionRepository

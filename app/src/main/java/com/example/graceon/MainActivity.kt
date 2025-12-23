@@ -1,4 +1,4 @@
-package com.graceon
+package com.example.graceon
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

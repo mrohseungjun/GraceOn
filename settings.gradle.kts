@@ -20,7 +20,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "GraceOn"
+rootProject.name = "GraceNote"
 include(":app")
 
 // Core modules

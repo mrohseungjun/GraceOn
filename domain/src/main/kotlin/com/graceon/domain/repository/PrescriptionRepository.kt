@@ -6,12 +6,12 @@ import com.graceon.domain.model.Prescription
 import com.graceon.domain.model.WorryContext
 
 /**
- * 처방전 Repository 인터페이스 (Clean Architecture)
+ * 말씀전 Repository 인터페이스 (Clean Architecture)
  */
 interface PrescriptionRepository {
     
     /**
-     * AI로부터 처방전(말씀 + 메시지) 생성
+     * AI로부터 말씀전(말씀 + 메시지) 생성
      */
     suspend fun generatePrescription(worryContext: WorryContext): Result<Prescription>
     

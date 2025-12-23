@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.graceon.core.common.Result
+import com.graceon.domain.data.CategoryData
 import com.graceon.domain.model.Prescription
 import com.graceon.domain.model.SavedPrescription
 import com.graceon.domain.model.WorryContext
@@ -16,7 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.net.URLDecoder
 import java.util.UUID
+import kotlin.text.Charsets
 
 /**
  * ViewModel for Result Screen (MVI Pattern)
@@ -93,20 +96,52 @@ class ResultViewModel(
 
     private fun sharePrescription() {
         viewModelScope.launch {
-            val worryText = customWorry ?: detailId ?: "고민"
+            val worryText = resolveWorryText()
+
+            val verse = decodeForDisplay(_state.value.prescription.verse)
+            val message = decodeForDisplay(_state.value.prescription.message)
+            val prayerText = _state.value.prayer?.text?.let(::decodeForDisplay)
+
             val shareText = """
-                [💊 하늘 약국] 처방전
+                [힐링 말씀]
                 
                 고민: $worryText
                 
-                ${_state.value.prescription.verse}
+                $verse
                 
-                ${_state.value.prescription.message}
+                $message
                 
-                ${_state.value.prayer?.let { "\n기도문:\n${it.text}" } ?: ""}
+                ${prayerText?.let { "\n기도문:\n$it" } ?: ""}
             """.trimIndent()
 
             _effect.send(ResultContract.Effect.ShareContent(shareText))
+        }
+    }
+
+    private fun resolveWorryText(): String {
+        customWorry?.let { return decodeForDisplay(it) }
+
+        val category = CategoryData.categories.firstOrNull { it.id == categoryId }
+
+        if (detailId != null) {
+            val detailTitle = category
+                ?.details
+                ?.firstOrNull { it.id == detailId }
+                ?.title
+
+            if (!detailTitle.isNullOrBlank()) return detailTitle
+        }
+
+        if (!category?.title.isNullOrBlank()) return category.title
+
+        return detailId ?: categoryId ?: "고민"
+    }
+
+    private fun decodeForDisplay(value: String): String {
+        return runCatching {
+            URLDecoder.decode(value, Charsets.UTF_8.name())
+        }.getOrElse {
+            value.replace("+", " ")
         }
     }
 

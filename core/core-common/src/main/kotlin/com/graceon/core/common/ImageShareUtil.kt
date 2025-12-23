@@ -16,7 +16,7 @@ object ImageShareUtil {
     /**
      * Bitmap을 파일로 저장하고 공유 Intent 생성
      */
-    fun shareBitmap(context: Context, bitmap: Bitmap, title: String = "처방전 공유하기"): Intent {
+    fun shareBitmap(context: Context, bitmap: Bitmap, title: String = "말씀 공유하기"): Intent {
         val cachePath = File(context.cacheDir, "images")
         cachePath.mkdirs()
         

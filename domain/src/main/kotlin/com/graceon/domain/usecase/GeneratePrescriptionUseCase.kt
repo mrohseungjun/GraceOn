@@ -6,7 +6,7 @@ import com.graceon.domain.model.WorryContext
 import com.graceon.domain.repository.PrescriptionRepository
 
 /**
- * 처방전 생성 UseCase
+ * 말씀전 생성 UseCase
  */
 class GeneratePrescriptionUseCase(
     private val repository: PrescriptionRepository

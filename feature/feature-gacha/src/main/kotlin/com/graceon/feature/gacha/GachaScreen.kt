@@ -150,7 +150,7 @@ private fun BackgroundParticles() {
 private fun GachaHeader(stage: GachaContract.State.Stage) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "🙏 하늘 약국",
+            text = "힐링 말씀",
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.ExtraBold,
             color = IndigoPrimary,
@@ -168,9 +168,9 @@ private fun GachaHeader(stage: GachaContract.State.Stage) {
               Text(
                 text = when (targetStage) {
                     GachaContract.State.Stage.Idle -> "마음을 담아 레버를 돌려주세요"
-                    GachaContract.State.Stage.Shaking -> "AI가 당신을 위한 말씀을 찾고 있어요..."
-                    GachaContract.State.Stage.Dispensing -> "처방전이 나오고 있어요!"
-                    GachaContract.State.Stage.Opening -> "처방전을 확인하세요"
+                    GachaContract.State.Stage.Shaking -> "당신을 위한 말씀을 찾고 있어요..."
+                    GachaContract.State.Stage.Dispensing -> "말씀이 나오고 있어요!"
+                    GachaContract.State.Stage.Opening -> "말씀을 확인하세요"
                     GachaContract.State.Stage.Complete -> "완료!"
                 },
                 style = MaterialTheme.typography.bodyLarge,
