@@ -11,7 +11,7 @@ AI 기반 성경 말씀 말씀 앱 - Kotlin Compose Multiplatform + Clean Archit
 ### Clean Architecture + MVI Pattern
 
 ```
-app/                    # Application 진입점, DI, Navigation
+composeApp/             # Compose Multiplatform 진입점(Android/iOS)
 ├── di/                # Koin DI 설정
 ├── navigation/        # Navigation Graph
 └── MainActivity.kt
@@ -97,7 +97,7 @@ GEMINI_API_KEY=your_api_key_here
 ### 2. 빌드 및 실행
 
 ```bash
-./gradlew :app:assembleDebug
+./gradlew :composeApp:assembleDebug
 ```
 
 ## 주요 기능
@@ -177,4 +177,3 @@ fun XxxScreen(viewModel: XxxViewModel)
 ## 라이선스
 
 MIT License
-

@@ -21,7 +21,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "GraceNote"
-include(":app")
+include(":composeApp")
 
 // Core modules
 include(":core:core-common")

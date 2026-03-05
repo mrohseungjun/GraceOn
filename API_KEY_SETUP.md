@@ -22,7 +22,7 @@
 GEMINI_API_KEY=AIzaSy여기에_발급받은_API_KEY_붙여넣기
 ```
 
-3. **현재 바로 사용 가능!** `app/src/main/kotlin/com/graceon/di/AppModule.kt`에서:
+3. **현재 바로 사용 가능!** `composeApp/src/androidMain/kotlin/com/graceon/di/AppModule.kt`에서:
 ```kotlin
 single { 
     GeminiApiClient(
@@ -37,7 +37,7 @@ single {
 
 1. `local.properties`에 API Key 추가 (위와 동일)
 
-2. `app/build.gradle.kts` 파일 수정:
+2. `composeApp/build.gradle.kts` 파일 수정:
 ```kotlin
 android {
     defaultConfig {
@@ -56,7 +56,7 @@ android {
 }
 ```
 
-3. `app/src/main/kotlin/com/graceon/di/AppModule.kt` 수정:
+3. `composeApp/src/androidMain/kotlin/com/graceon/di/AppModule.kt` 수정:
 ```kotlin
 single { 
     GeminiApiClient(
