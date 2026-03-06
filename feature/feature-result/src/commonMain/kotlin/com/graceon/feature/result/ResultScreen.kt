@@ -22,12 +22,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.graceon.core.ui.component.GraceOnScaffold
 import com.graceon.core.ui.theme.*
-import com.graceon.feature.result.ResultContract
-
 @Composable
 fun ResultScreen(
     viewModel: ResultViewModel,
+    onNavigateBack: () -> Unit,
     onNavigateHome: () -> Unit,
     onShareText: (String) -> Unit = {},
     onShareImage: () -> Unit = {}
@@ -56,8 +56,10 @@ fun ResultScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    GraceOnScaffold(
+        title = "힐링 말씀",
+        onNavigateBack = onNavigateBack,
+        snackbarHostState = snackbarHostState
     ) { paddingValues ->
         Box(
             modifier = Modifier

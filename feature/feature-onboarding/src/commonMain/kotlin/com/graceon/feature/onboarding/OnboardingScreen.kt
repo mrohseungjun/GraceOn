@@ -10,13 +10,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,25 +48,25 @@ private val onboardingPages = listOf(
         emoji = "💊",
         title = "힐링 말씀에\n오신 것을 환영합니다",
         description = "마음이 지칠 때, 위로가 필요할 때\nAI가 당신에게 꼭 맞는 말씀을 말씀해드려요",
-        gradientColors = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
+        gradientColors = listOf(PrimaryDark, Primary, Secondary)
     ),
     OnboardingPage(
         emoji = "🎰",
         title = "고민을 선택하고\n말씀을 뽑아보세요",
         description = "가챠 뽑기처럼 재미있게!\n당신의 고민에 맞는 성경 말씀이 나와요",
-        gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFFC084FC))
+        gradientColors = listOf(Primary, Secondary, SecondaryLight)
     ),
     OnboardingPage(
         emoji = "✨",
         title = "AI가 분석하여\n맞춤 말씀을 드려요",
         description = "단순한 말씀 검색이 아닌\n당신의 상황에 맞는 깊은 위로를 전해드려요",
-        gradientColors = listOf(Color(0xFFC084FC), Color(0xFFF472B6))
+        gradientColors = listOf(SecondaryDark, Secondary, Tertiary)
     ),
     OnboardingPage(
-        emoji = "💜",
+        emoji = "🤍",
         title = "저장하고\n언제든 다시 보세요",
         description = "마음에 드는 말씀은 저장하고\n힘들 때마다 꺼내보세요",
-        gradientColors = listOf(Color(0xFFF472B6), Color(0xFFFB7185))
+        gradientColors = listOf(Primary, Tertiary, TertiaryLight)
     )
 )
 
@@ -76,16 +78,28 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(pageCount = { onboardingPages.size })
     val coroutineScope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage == onboardingPages.size - 1
+    val currentPage = onboardingPages[pagerState.currentPage]
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = onboardingPages[pagerState.currentPage].gradientColors
+                    colors = currentPage.gradientColors
                 )
             )
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.22f), Color.Transparent)
+                    )
+                )
+        )
+
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -98,11 +112,11 @@ fun OnboardingScreen(
                 if (!isLastPage) {
                     TextButton(
                         onClick = onComplete,
-                        modifier = Modifier.align(Alignment.CenterEnd)
+                            modifier = Modifier.align(Alignment.CenterEnd)
                     ) {
                         Text(
                             text = "건너뛰기",
-                            color = Color.White.copy(alpha = 0.8f),
+                            color = Color.White.copy(alpha = 0.92f),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -126,9 +140,27 @@ fun OnboardingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .background(
+                        color = Color.White.copy(alpha = 0.12f),
+                        shape = AbsoluteRoundedCornerShape(topLeft = 28.dp, topRight = 28.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = Color.White.copy(alpha = 0.18f)
+                ) {
+                    Text(
+                        text = "${pagerState.currentPage + 1} / ${onboardingPages.size}",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
                 // Page Indicators
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -171,7 +203,7 @@ fun OnboardingScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
-                        contentColor = onboardingPages[pagerState.currentPage].gradientColors[0]
+                        contentColor = currentPage.gradientColors.first()
                     )
                 ) {
                     Text(
@@ -181,7 +213,7 @@ fun OnboardingScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
-                        imageVector = if (isLastPage) Icons.Default.Check else Icons.Default.ArrowForward,
+                        imageVector = if (isLastPage) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null
                     )
                 }
@@ -214,11 +246,27 @@ private fun OnboardingPageContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Emoji with glow effect
-        Box(
-            contentAlignment = Alignment.Center
+        Surface(
+            shape = RoundedCornerShape(32.dp),
+            color = Color.White.copy(alpha = 0.14f),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f))
         ) {
-            // Glow
+            Box(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Grace Note",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Box(contentAlignment = Alignment.Center) {
             Box(
                 modifier = Modifier
                     .size(160.dp)
@@ -253,5 +301,25 @@ private fun OnboardingPageContent(
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White.copy(alpha = 0.12f)
+        ) {
+            Text(
+                text = when (page.title) {
+                    "힐링 말씀에\n오신 것을 환영합니다" -> "지친 마음을 위한 작은 쉼표"
+                    "고민을 선택하고\n말씀을 뽑아보세요" -> "카테고리 선택부터 결과 확인까지 빠르게"
+                    "AI가 분석하여\n맞춤 말씀을 드려요" -> "지금 상황에 맞는 위로를 더 정확하게"
+                    else -> "마음에 남는 말씀은 언제든 다시 보기"
+                },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

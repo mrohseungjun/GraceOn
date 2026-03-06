@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.graceon.core.ui.component.GraceOnScaffold
 import com.graceon.core.ui.theme.*
 import com.graceon.domain.model.Category
 import com.graceon.domain.model.ColorType
@@ -50,6 +52,13 @@ fun WorryScreen(
     onNavigateToSaved: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val currentTitle = when (state.step) {
+        WorryContract.State.Step.Intro -> null
+        WorryContract.State.Step.CategorySelection -> "고민 선택"
+        WorryContract.State.Step.DetailSelection -> state.selectedCategory?.title ?: "세부 고민"
+        WorryContract.State.Step.CustomInput -> "AI 고민 나누기"
+    }
+    val canNavigateBack = state.step != WorryContract.State.Step.Intro
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -70,7 +79,20 @@ fun WorryScreen(
         }
     }
 
-    Scaffold { paddingValues ->
+    GraceOnScaffold(
+        title = currentTitle,
+        onNavigateBack = if (canNavigateBack) {
+            { viewModel.handleIntent(WorryContract.Intent.NavigateBack) }
+        } else {
+            null
+        },
+        backgroundBrush = Brush.verticalGradient(
+            colors = listOf(
+                MaterialTheme.colorScheme.background,
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f)
+            )
+        )
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -105,23 +127,20 @@ fun WorryScreen(
                     )
                     WorryContract.State.Step.CategorySelection -> CategorySelectionStep(
                         categories = state.categories,
-                        onSelectCategory = { viewModel.handleIntent(WorryContract.Intent.SelectCategory(it)) },
-                        onBack = { viewModel.handleIntent(WorryContract.Intent.NavigateBack) }
+                        onSelectCategory = { viewModel.handleIntent(WorryContract.Intent.SelectCategory(it)) }
                     )
                     WorryContract.State.Step.DetailSelection -> {
                         state.selectedCategory?.let { category ->
                             DetailSelectionStep(
                                 category = category,
-                                onSelectDetail = { viewModel.handleIntent(WorryContract.Intent.SelectDetail(it)) },
-                                onBack = { viewModel.handleIntent(WorryContract.Intent.NavigateBack) }
+                                onSelectDetail = { viewModel.handleIntent(WorryContract.Intent.SelectDetail(it)) }
                             )
                         } ?: Box(modifier = Modifier.fillMaxSize())
                     }
                     WorryContract.State.Step.CustomInput -> CustomInputStep(
                         customWorry = state.customWorry,
                         onWorryChange = { viewModel.handleIntent(WorryContract.Intent.UpdateCustomWorry(it)) },
-                        onConfirm = { viewModel.handleIntent(WorryContract.Intent.ConfirmCustomWorry) },
-                        onBack = { viewModel.handleIntent(WorryContract.Intent.NavigateBack) }
+                        onConfirm = { viewModel.handleIntent(WorryContract.Intent.ConfirmCustomWorry) }
                     )
                 }
             }
@@ -131,44 +150,17 @@ fun WorryScreen(
 
 @Composable
 private fun WorryStepLayout(
-    onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp)
-            .padding(top = 16.dp, bottom = 20.dp)
+            .padding(top = 12.dp, bottom = 20.dp)
     ) {
-        if (onBack != null) {
-            WorryBackButton(onClick = onBack)
-            Spacer(modifier = Modifier.height(20.dp))
-        } else {
-            Spacer(modifier = Modifier.height(12.dp))
-        }
+        Spacer(modifier = Modifier.height(8.dp))
         content()
-    }
-}
-
-@Composable
-private fun WorryBackButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    IconButton(
-        onClick = onClick,
-        modifier = modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "Back",
-            tint = MaterialTheme.colorScheme.onSurface
-        )
     }
 }
 
@@ -226,7 +218,7 @@ private fun IntroStep(
         label = "scale"
     )
 
-    WorryStepLayout(onBack = null, modifier = Modifier.scale(scale)) {
+    WorryStepLayout(modifier = Modifier.scale(scale)) {
         Column(
             modifier = Modifier
                 .fillMaxSize(),
@@ -349,10 +341,9 @@ private fun IntroActions(
 @Composable
 private fun CategorySelectionStep(
     categories: List<Category>,
-    onSelectCategory: (Category) -> Unit,
-    onBack: () -> Unit
+    onSelectCategory: (Category) -> Unit
 ) {
-    WorryStepLayout(onBack = onBack) {
+    WorryStepLayout {
         WorryHeader(
             title = "어떤 고민이\n마음을 무겁게 하나요?",
             subtitle = "카테고리를 선택해주세요"
@@ -434,13 +425,12 @@ private fun CategoryCard(
 @Composable
 private fun DetailSelectionStep(
     category: Category,
-    onSelectDetail: (com.graceon.domain.model.DetailWorry) -> Unit,
-    onBack: () -> Unit
+    onSelectDetail: (com.graceon.domain.model.DetailWorry) -> Unit
 ) {
     val icon = category.iconType.toIcon()
     val (color, bgColor) = category.colorType.toCategoryColors()
 
-    WorryStepLayout(onBack = onBack) {
+    WorryStepLayout {
         DetailHeader(
             icon = icon,
             color = color,
@@ -562,10 +552,9 @@ private fun DetailList(
 private fun CustomInputStep(
     customWorry: String,
     onWorryChange: (String) -> Unit,
-    onConfirm: () -> Unit,
-    onBack: () -> Unit
+    onConfirm: () -> Unit
 ) {
-    WorryStepLayout(onBack = onBack) {
+    WorryStepLayout {
         CustomInputHeader()
 
         Spacer(modifier = Modifier.height(16.dp))

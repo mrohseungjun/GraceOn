@@ -27,12 +27,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+import com.graceon.core.ui.component.GraceOnScaffold
 import com.graceon.core.ui.theme.*
 import com.graceon.domain.model.Prescription
 
 @Composable
 fun GachaScreen(
     viewModel: GachaViewModel,
+    onNavigateBack: () -> Unit,
     onNavigateToResult: (Prescription, String?, String?, String?, Boolean) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
@@ -57,21 +59,22 @@ fun GachaScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    GraceOnScaffold(
+        title = "말씀 뽑기",
+        onNavigateBack = onNavigateBack,
+        snackbarHostState = snackbarHostState,
+        backgroundBrush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFFEEF2FF),
+                Color(0xFFE0E7FF)
+            )
+        )
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFEEF2FF),
-                            Color(0xFFE0E7FF)
-                        )
-                    )
-                ),
+                .background(Color.Transparent),
             contentAlignment = Alignment.Center
         ) {
             // Animated Background Particles

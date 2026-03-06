@@ -2,9 +2,8 @@ package com.graceon.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import com.graceon.GraceOnDependencies
 import com.graceon.domain.model.Prescription
 import com.graceon.feature.gacha.GachaScreen
@@ -32,6 +31,14 @@ private data class ResultArgs(
     val isAiMode: Boolean
 )
 
+private sealed interface NavEntry {
+    data object Onboarding : NavEntry
+    data object Worry : NavEntry
+    data class Gacha(val args: WorryArgs) : NavEntry
+    data class Result(val args: ResultArgs) : NavEntry
+    data object Saved : NavEntry
+}
+
 internal object Screen {
     const val ONBOARDING = "onboarding"
     const val WORRY = "worry"
@@ -48,98 +55,128 @@ internal fun NavGraph(
     onShareImage: () -> Unit = {},
     onOnboardingComplete: () -> Unit = {}
 ) {
-    var currentScreen by remember { mutableStateOf(startDestination) }
-    var worryArgs by remember { mutableStateOf<WorryArgs?>(null) }
-    var resultArgs by remember { mutableStateOf<ResultArgs?>(null) }
+    val worryViewModel = remember { WorryViewModel() }
+    val savedViewModel = remember {
+        SavedViewModel(
+            getSavedPrescriptionsUseCase = dependencies.getSavedPrescriptionsUseCase,
+            deletePrescriptionUseCase = dependencies.deletePrescriptionUseCase
+        )
+    }
+    val initialEntry = remember(startDestination) {
+        when (startDestination) {
+            Screen.WORRY -> NavEntry.Worry
+            Screen.SAVED -> NavEntry.Saved
+            else -> NavEntry.Onboarding
+        }
+    }
+    val backStack = remember(initialEntry) { mutableStateListOf(initialEntry) }
 
-    when (currentScreen) {
-        Screen.ONBOARDING -> {
+    fun navigate(entry: NavEntry) {
+        backStack += entry
+    }
+
+    fun replaceRoot(entry: NavEntry) {
+        backStack.clear()
+        backStack += entry
+    }
+
+    fun popBackStack() {
+        if (backStack.size > 1) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+    }
+
+    fun popToWorry() {
+        while (backStack.size > 1 && backStack.last() !is NavEntry.Worry) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+    }
+
+    PlatformBackHandler(
+        enabled = backStack.size > 1,
+        onBack = ::popBackStack
+    )
+
+    when (val entry = backStack.last()) {
+        NavEntry.Onboarding -> {
             OnboardingScreen(
                 onComplete = {
                     onOnboardingComplete()
-                    currentScreen = Screen.WORRY
+                    replaceRoot(NavEntry.Worry)
                 }
             )
         }
 
-        Screen.WORRY -> {
-            val viewModel = remember { WorryViewModel() }
+        NavEntry.Worry -> {
             WorryScreen(
-                viewModel = viewModel,
+                viewModel = worryViewModel,
                 onNavigateToGacha = { categoryId, detailId, customWorry, isAiMode ->
-                    worryArgs = WorryArgs(categoryId, detailId, customWorry, isAiMode)
-                    currentScreen = Screen.GACHA
+                    navigate(
+                        NavEntry.Gacha(
+                            WorryArgs(categoryId, detailId, customWorry, isAiMode)
+                        )
+                    )
                 },
-                onNavigateBack = {},
-                onNavigateToSaved = { currentScreen = Screen.SAVED }
+                onNavigateBack = ::popBackStack,
+                onNavigateToSaved = { navigate(NavEntry.Saved) }
             )
         }
 
-        Screen.GACHA -> {
-            val args = worryArgs ?: WorryArgs(null, null, null, false)
-            val viewModel = remember(args) {
+        is NavEntry.Gacha -> {
+            val viewModel = remember(entry.args) {
                 GachaViewModel(
                     generatePrescriptionUseCase = dependencies.generatePrescriptionUseCase,
-                    categoryId = args.categoryId,
-                    detailId = args.detailId,
-                    customWorry = args.customWorry,
-                    isAiMode = args.isAiMode
+                    categoryId = entry.args.categoryId,
+                    detailId = entry.args.detailId,
+                    customWorry = entry.args.customWorry,
+                    isAiMode = entry.args.isAiMode
                 )
             }
 
             GachaScreen(
                 viewModel = viewModel,
+                onNavigateBack = ::popBackStack,
                 onNavigateToResult = { prescription, categoryId, detailId, customWorry, isAiMode ->
-                    resultArgs = ResultArgs(
-                        prescription = prescription,
-                        categoryId = categoryId,
-                        detailId = detailId,
-                        customWorry = customWorry,
-                        isAiMode = isAiMode
+                    navigate(
+                        NavEntry.Result(
+                            ResultArgs(
+                                prescription = prescription,
+                                categoryId = categoryId,
+                                detailId = detailId,
+                                customWorry = customWorry,
+                                isAiMode = isAiMode
+                            )
+                        )
                     )
-                    currentScreen = Screen.RESULT
                 }
             )
         }
 
-        Screen.RESULT -> {
-            val args = resultArgs
-            if (args == null) {
-                currentScreen = Screen.WORRY
-                return
-            }
-
-            val viewModel = remember(args) {
+        is NavEntry.Result -> {
+            val viewModel = remember(entry.args) {
                 ResultViewModel(
                     generatePrayerUseCase = dependencies.generatePrayerUseCase,
                     savePrescriptionUseCase = dependencies.savePrescriptionUseCase,
-                    prescription = args.prescription,
-                    categoryId = args.categoryId,
-                    detailId = args.detailId,
-                    customWorry = args.customWorry,
-                    isAiMode = args.isAiMode
+                    prescription = entry.args.prescription,
+                    categoryId = entry.args.categoryId,
+                    detailId = entry.args.detailId,
+                    customWorry = entry.args.customWorry,
+                    isAiMode = entry.args.isAiMode
                 )
             }
             ResultScreen(
                 viewModel = viewModel,
+                onNavigateBack = ::popBackStack,
                 onShareText = onShareText,
                 onShareImage = onShareImage,
-                onNavigateHome = {
-                    currentScreen = Screen.WORRY
-                }
+                onNavigateHome = ::popToWorry
             )
         }
 
-        Screen.SAVED -> {
-            val viewModel = remember {
-                SavedViewModel(
-                    getSavedPrescriptionsUseCase = dependencies.getSavedPrescriptionsUseCase,
-                    deletePrescriptionUseCase = dependencies.deletePrescriptionUseCase
-                )
-            }
+        NavEntry.Saved -> {
             SavedScreen(
-                viewModel = viewModel,
-                onNavigateBack = { currentScreen = Screen.WORRY }
+                viewModel = savedViewModel,
+                onNavigateBack = ::popBackStack
             )
         }
     }

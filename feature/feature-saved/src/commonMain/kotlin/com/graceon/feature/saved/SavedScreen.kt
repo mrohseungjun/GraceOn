@@ -5,12 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.graceon.core.ui.component.GraceOnScaffold
 import com.graceon.core.ui.theme.*
 import com.graceon.domain.model.SavedPrescription
 
@@ -52,23 +59,48 @@ fun SavedScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {
+    GraceOnScaffold(
+        snackbarHostState = snackbarHostState,
+        title = if (isSearchActive) null else "저장된 말씀",
+        titleContent = if (isSearchActive) {
+            {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("말씀, 메시지 검색...") },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        } else {
+            null
+        },
+        onNavigateBack = {
             if (isSearchActive) {
-                SearchTopBar(
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it },
-                    onClose = {
-                        isSearchActive = false
-                        searchQuery = ""
-                    }
-                )
+                isSearchActive = false
+                searchQuery = ""
             } else {
-                DefaultTopBar(
-                    onNavigateBack = onNavigateBack,
-                    onSearchClick = { isSearchActive = true }
-                )
+                onNavigateBack()
+            }
+        },
+        centerAlignedTopBar = !isSearchActive,
+        actions = {
+            if (isSearchActive) {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(Icons.Default.Close, contentDescription = "지우기")
+                    }
+                }
+            } else {
+                IconButton(onClick = { isSearchActive = true }) {
+                    Icon(Icons.Default.Search, contentDescription = "검색")
+                }
             }
         }
     ) { paddingValues ->
@@ -89,15 +121,14 @@ fun SavedScreen(
                     EmptyState()
                 }
                 else -> {
-                    // Filter and Group Data
                     val filteredList = remember(state.prescriptions, searchQuery) {
                         if (searchQuery.isBlank()) {
                             state.prescriptions
                         } else {
                             state.prescriptions.filter {
                                 it.verse.contains(searchQuery, ignoreCase = true) ||
-                                it.message.contains(searchQuery, ignoreCase = true) ||
-                                (it.prayer?.contains(searchQuery, ignoreCase = true) == true)
+                                    it.message.contains(searchQuery, ignoreCase = true) ||
+                                    (it.prayer?.contains(searchQuery, ignoreCase = true) == true)
                             }
                         }
                     }
@@ -345,76 +376,6 @@ private fun SavedPrescriptionCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DefaultTopBar(
-    onNavigateBack: () -> Unit,
-    onSearchClick: () -> Unit
-) {
-    TopAppBar(
-        title = {
-            Text(
-                text = "저장된 말씀",
-                fontWeight = FontWeight.Bold
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
-            }
-        },
-        actions = {
-            IconButton(onClick = onSearchClick) {
-                Icon(Icons.Default.Search, contentDescription = "검색")
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SearchTopBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onClose: () -> Unit
-) {
-    TopAppBar(
-        title = {
-            TextField(
-                value = query,
-                onValueChange = onQueryChange,
-                placeholder = { Text("말씀, 메시지 검색...") },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "닫기")
-            }
-        },
-        actions = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Default.Close, contentDescription = "지우기")
-                }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    )
-}
-
 @Composable
 private fun HistorySectionHeader(title: String) {
     Text(
@@ -506,10 +467,9 @@ private fun SavedPrescriptionDetailDialog(
                             modifier = Modifier.padding(18.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.MenuBook,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                            Text(
+                                text = "📖",
+                                fontSize = 24.sp
                             )
 
                             Spacer(modifier = Modifier.height(10.dp))
