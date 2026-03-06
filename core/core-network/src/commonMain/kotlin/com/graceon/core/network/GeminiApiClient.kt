@@ -42,6 +42,10 @@ class GeminiApiClient(
     }
 
     suspend fun generateContent(prompt: String): String {
+        require(apiKey.isNotBlank()) {
+            "Gemini API key is missing. Configure GEMINI_API_KEY for this platform."
+        }
+
         val response = client.post {
             url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
             parameter("key", apiKey)

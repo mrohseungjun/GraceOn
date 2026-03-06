@@ -7,16 +7,16 @@ import androidx.compose.ui.Modifier
 import com.graceon.core.ui.theme.GraceOnTheme
 
 @Composable
-fun App() {
+fun App(apiKey: String = "") {
     GraceOnTheme {
         Surface(
             modifier = Modifier,
             color = MaterialTheme.colorScheme.background
         ) {
-            PlatformAppContent()
+            PlatformAppContent(apiKey = apiKey)
         }
     }
 }
 
 @Composable
-internal expect fun PlatformAppContent()
+internal expect fun PlatformAppContent(apiKey: String)

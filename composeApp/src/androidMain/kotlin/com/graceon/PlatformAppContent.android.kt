@@ -6,12 +6,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-internal actual fun PlatformAppContent() {
+internal actual fun PlatformAppContent(apiKey: String) {
     val context = LocalContext.current
     val dependencies = remember(context) {
         createGraceOnAndroidDependencies(
             context = context,
-            apiKey = BuildConfig.GEMINI_API_KEY
+            apiKey = apiKey.ifBlank { BuildConfig.GEMINI_API_KEY }
         )
     }
 
