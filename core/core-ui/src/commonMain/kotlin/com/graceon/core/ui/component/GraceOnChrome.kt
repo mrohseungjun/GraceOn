@@ -19,20 +19,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.graceon.core.ui.theme.GlassBorder
-import com.graceon.core.ui.theme.GlassSurfaceStrong
 import com.graceon.core.ui.theme.Primary
 
 enum class GraceOnBottomTab {
     Home,
     Word,
-    Saved
+    Saved,
+    Profile
 }
 
 @Composable
@@ -46,7 +44,6 @@ fun GraceOnAmbientBackground(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .padding(top = 12.dp, start = 12.dp)
                 .size(260.dp)
-                .blur(120.dp)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
@@ -63,7 +60,6 @@ fun GraceOnAmbientBackground(modifier: Modifier = Modifier) {
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 96.dp)
                 .size(220.dp)
-                .blur(110.dp)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
@@ -83,17 +79,22 @@ fun GraceOnBottomBar(
     onHomeClick: () -> Unit,
     onWordClick: () -> Unit,
     onSavedClick: () -> Unit,
+    onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDarkTheme = MaterialTheme.colorScheme.background.red < 0.5f
     Surface(
         modifier = modifier.shadow(
             elevation = 24.dp,
             shape = RoundedCornerShape(999.dp),
             clip = false
         ),
-        color = Color(0xFF0D141D).copy(alpha = 0.96f),
+        color = if (isDarkTheme) Color(0xFF0D141D).copy(alpha = 0.96f) else Color.White.copy(alpha = 0.96f),
         shape = RoundedCornerShape(999.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isDarkTheme) Color.White.copy(alpha = 0.08f) else Color(0x14000000)
+        )
     ) {
         Row(
             modifier = Modifier
@@ -120,6 +121,12 @@ fun GraceOnBottomBar(
                 active = activeTab == GraceOnBottomTab.Saved,
                 onClick = onSavedClick,
                 iconLabel = "S"
+            )
+            BottomBarButton(
+                label = "마이",
+                active = activeTab == GraceOnBottomTab.Profile,
+                onClick = onProfileClick,
+                iconLabel = "M"
             )
         }
     }

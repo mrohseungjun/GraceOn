@@ -2,6 +2,11 @@ package com.graceon.domain.model
 
 import kotlinx.serialization.Serializable
 
+const val RANDOM_VERSE_PROMPT =
+    "오늘 하루의 감정이나 고민과 무관하게 누구에게나 힘이 될 수 있는 성경 말씀 하나를 추천해줘."
+
+const val RANDOM_VERSE_DISPLAY_TEXT = "오늘 내게 주시는 말씀"
+
 /**
  * AI 말씀전 결과 모델
  */

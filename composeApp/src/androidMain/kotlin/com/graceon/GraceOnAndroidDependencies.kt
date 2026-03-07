@@ -4,6 +4,8 @@ import android.content.Context
 import com.graceon.core.common.DefaultDispatcherProvider
 import com.graceon.core.network.GeminiApiClient
 import com.graceon.data.datastore.OnboardingPreferences
+import com.graceon.data.datastore.NotificationPreferences
+import com.graceon.data.datastore.ThemePreferences
 import com.graceon.data.repository.PlatformContext
 import com.graceon.data.repository.PrescriptionRepositoryImpl
 import com.graceon.data.repository.SavedPrescriptionRepositoryImpl
@@ -29,6 +31,8 @@ internal fun createGraceOnAndroidDependencies(
 
     return GraceOnDependencies(
         onboardingPreferences = OnboardingPreferences(PlatformContext(context)),
+        notificationPreferences = NotificationPreferences(PlatformContext(context)),
+        themePreferences = ThemePreferences(PlatformContext(context)),
         generatePrescriptionUseCase = GeneratePrescriptionUseCase(prescriptionRepository),
         generatePrayerUseCase = GeneratePrayerUseCase(prescriptionRepository),
         savePrescriptionUseCase = SavePrescriptionUseCase(savedPrescriptionRepository),

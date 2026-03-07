@@ -52,6 +52,7 @@ kotlin {
             implementation(project(":feature:feature-gacha"))
             implementation(project(":feature:feature-result"))
             implementation(project(":feature:feature-saved"))
+            implementation(project(":feature:feature-profile"))
 
             implementation(project(":domain"))
             implementation(project(":data"))

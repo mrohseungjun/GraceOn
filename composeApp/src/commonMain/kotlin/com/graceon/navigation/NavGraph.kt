@@ -18,6 +18,7 @@ import com.graceon.domain.model.Prescription
 import com.graceon.feature.gacha.GachaScreen
 import com.graceon.feature.gacha.GachaViewModel
 import com.graceon.feature.onboarding.OnboardingScreen
+import com.graceon.feature.profile.ProfileScreen
 import com.graceon.feature.result.ResultScreen
 import com.graceon.feature.result.ResultViewModel
 import com.graceon.feature.saved.SavedScreen
@@ -46,6 +47,7 @@ private sealed interface NavEntry {
     data class Gacha(val args: WorryArgs) : NavEntry
     data class Result(val args: ResultArgs) : NavEntry
     data object Saved : NavEntry
+    data object Profile : NavEntry
 }
 
 internal object Screen {
@@ -54,6 +56,7 @@ internal object Screen {
     const val GACHA = "gacha"
     const val RESULT = "result"
     const val SAVED = "saved"
+    const val PROFILE = "profile"
 }
 
 private enum class NavigationDirection {
@@ -66,8 +69,12 @@ private enum class NavigationDirection {
 internal fun NavGraph(
     dependencies: GraceOnDependencies,
     startDestination: String = Screen.ONBOARDING,
+    appVersion: String = "",
     onShareText: (String) -> Unit = {},
-    onShareImage: () -> Unit = {},
+    isDailyVerseNotificationEnabled: Boolean = false,
+    isDarkThemeEnabled: Boolean = true,
+    onToggleDailyVerseNotification: (Boolean) -> Unit = {},
+    onToggleDarkTheme: (Boolean) -> Unit = {},
     onOnboardingComplete: () -> Unit = {}
 ) {
     val worryViewModel = remember { WorryViewModel() }
@@ -81,6 +88,7 @@ internal fun NavGraph(
         when (startDestination) {
             Screen.WORRY -> NavEntry.Worry
             Screen.SAVED -> NavEntry.Saved
+            Screen.PROFILE -> NavEntry.Profile
             else -> NavEntry.Onboarding
         }
     }
@@ -110,6 +118,21 @@ internal fun NavGraph(
         while (backStack.size > 1 && backStack.last() !is NavEntry.Worry) {
             backStack.removeAt(backStack.lastIndex)
         }
+    }
+
+    fun retryFromResult(args: ResultArgs) {
+        navigationDirection = NavigationDirection.Replace
+        while (backStack.lastOrNull() is NavEntry.Result || backStack.lastOrNull() is NavEntry.Gacha) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+        backStack += NavEntry.Gacha(
+            WorryArgs(
+                categoryId = args.categoryId,
+                detailId = args.detailId,
+                customWorry = args.customWorry,
+                isAiMode = args.isAiMode
+            )
+        )
     }
 
     PlatformBackHandler(
@@ -145,7 +168,8 @@ internal fun NavGraph(
                         )
                     },
                     onNavigateBack = ::popBackStack,
-                    onNavigateToSaved = { navigate(NavEntry.Saved) }
+                    onNavigateToSaved = { navigate(NavEntry.Saved) },
+                    onNavigateToProfile = { navigate(NavEntry.Profile) }
                 )
             }
 
@@ -195,8 +219,9 @@ internal fun NavGraph(
                     viewModel = viewModel,
                     onNavigateBack = ::popBackStack,
                     onNavigateToSaved = { navigate(NavEntry.Saved) },
+                    onNavigateToProfile = { replaceRoot(NavEntry.Profile) },
                     onShareText = onShareText,
-                    onShareImage = onShareImage,
+                    onRetry = { retryFromResult(entry.args) },
                     onNavigateHome = ::popToWorry
                 )
             }
@@ -205,7 +230,29 @@ internal fun NavGraph(
                 SavedScreen(
                     viewModel = savedViewModel,
                     onNavigateBack = ::popBackStack,
+                    onShareText = onShareText,
+                    onNavigateToWord = {
+                        worryViewModel.handleIntent(com.graceon.feature.worry.WorryContract.Intent.StartCategoryMode)
+                        replaceRoot(NavEntry.Worry)
+                    },
+                    onNavigateToProfile = { replaceRoot(NavEntry.Profile) },
                     onNavigateHome = { replaceRoot(NavEntry.Worry) }
+                )
+            }
+
+            NavEntry.Profile -> {
+                ProfileScreen(
+                    isDailyVerseNotificationEnabled = isDailyVerseNotificationEnabled,
+                    isDarkThemeEnabled = isDarkThemeEnabled,
+                    appVersion = appVersion,
+                    onToggleDailyVerseNotification = onToggleDailyVerseNotification,
+                    onToggleDarkTheme = onToggleDarkTheme,
+                    onNavigateHome = { replaceRoot(NavEntry.Worry) },
+                    onNavigateToWord = {
+                        worryViewModel.handleIntent(com.graceon.feature.worry.WorryContract.Intent.StartCategoryMode)
+                        replaceRoot(NavEntry.Worry)
+                    },
+                    onNavigateToSaved = { replaceRoot(NavEntry.Saved) }
                 )
             }
         }

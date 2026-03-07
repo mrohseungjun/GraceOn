@@ -22,14 +22,12 @@ object ResultContract {
     sealed interface Intent {
         data object GeneratePrayer : Intent
         data object SharePrescription : Intent
-        data object ShareAsImage : Intent
         data object SavePrescription : Intent
         data object Reset : Intent
     }
     
     sealed interface Effect {
         data class ShareContent(val text: String) : Effect
-        data object ShareAsImage : Effect
         data object NavigateToHome : Effect
         data object ShowSaveSuccess : Effect
         data class ShowError(val message: String) : Effect

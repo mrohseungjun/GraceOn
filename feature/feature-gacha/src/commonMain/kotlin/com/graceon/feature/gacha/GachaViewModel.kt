@@ -1,6 +1,7 @@
 package com.graceon.feature.gacha
 
 import com.graceon.core.common.Result
+import com.graceon.core.common.toUserFacingMessage
 import com.graceon.domain.model.WorryContext
 import com.graceon.domain.usecase.GeneratePrescriptionUseCase
 import com.graceon.feature.gacha.GachaContract
@@ -100,7 +101,11 @@ class GachaViewModel(
                         isLoading = false,
                         error = result.exception.message
                     )
-                    _effect.send(GachaContract.Effect.ShowError("오류가 발생했습니다: ${result.exception.message}"))
+                    _effect.send(
+                        GachaContract.Effect.ShowError(
+                            result.exception.toUserFacingMessage("말씀을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.")
+                        )
+                    )
                 }
                 is Result.Loading -> {
                     // Should not happen

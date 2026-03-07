@@ -35,8 +35,8 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.PersonOutline
-import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -85,7 +85,8 @@ fun WorryScreen(
     viewModel: WorryViewModel,
     onNavigateToGacha: (String?, String?, String?, Boolean) -> Unit,
     onNavigateBack: () -> Unit,
-    onNavigateToSaved: () -> Unit = {}
+    onNavigateToSaved: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -159,6 +160,7 @@ fun WorryScreen(
                         viewModel.handleIntent(WorryContract.Intent.StartCategoryMode)
                     },
                     onSavedClick = onNavigateToSaved,
+                    onProfileClick = onNavigateToProfile,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(horizontal = 20.dp, vertical = 18.dp)
@@ -275,9 +277,8 @@ private fun IntroStep(
 
         item {
             HeroModeCard(
-                title = "AI에게 지금 마음 나누기",
-                description = "자유롭게 적어주시면 GraceOn이 말씀과 기도문으로 응답합니다.",
-                buttonLabel = "AI 위로 시작하기",
+                title = "오늘 내게 주시는 말씀",
+                description = "복잡한 고민 없이, 지금 당신에게 가장 필요한 위로를 바로 뽑아보세요.",
                 onClick = onStartAiMode
             )
         }
@@ -352,11 +353,12 @@ private fun IntroStep(
 private fun HeroModeCard(
     title: String,
     description: String,
-    buttonLabel: String,
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         color = GlassSurfaceStrong,
         shape = RoundedCornerShape(32.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
@@ -400,19 +402,6 @@ private fun HeroModeCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 24.sp
                 )
-                Button(
-                    onClick = onClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
-                    )
-                ) {
-                    Text(buttonLabel, fontWeight = FontWeight.Bold)
-                }
             }
         }
     }
@@ -765,7 +754,7 @@ private fun WorryContract.State.Step.stepIndex(): Int = when (this) {
 private fun IconType.toIcon(): ImageVector = when (this) {
     IconType.BRIEFCASE -> Icons.Outlined.WorkOutline
     IconType.USER -> Icons.Default.PersonOutline
-    IconType.SUN -> Icons.Default.WbSunny
+    IconType.SUN -> Icons.Default.LightMode
     IconType.HEART -> Icons.Default.FavoriteBorder
 }
 

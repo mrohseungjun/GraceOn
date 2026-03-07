@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import com.graceon.App
 
 /**
- * Main Activity - Entry point of GraceOn App
+ * Main Activity - ㅇEntry point of GraceOn App
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

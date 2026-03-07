@@ -1,6 +1,7 @@
 package com.graceon.feature.worry
 
 import com.graceon.domain.data.CategoryData
+import com.graceon.domain.model.RANDOM_VERSE_PROMPT
 import com.graceon.feature.worry.WorryContract
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,10 +55,16 @@ class WorryViewModel {
     }
 
     private fun startAiMode() {
-        _state.value = _state.value.copy(
-            step = WorryContract.State.Step.CustomInput,
-            isAiMode = true
-        )
+        scope.launch {
+            _effect.send(
+                WorryContract.Effect.NavigateToGacha(
+                    categoryId = null,
+                    detailId = null,
+                    customWorry = RANDOM_VERSE_PROMPT,
+                    isAiMode = true
+                )
+            )
+        }
     }
 
     private fun selectCategory(category: com.graceon.domain.model.Category) {

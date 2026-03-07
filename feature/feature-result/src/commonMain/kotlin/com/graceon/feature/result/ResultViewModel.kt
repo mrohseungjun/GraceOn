@@ -1,8 +1,11 @@
 package com.graceon.feature.result
 
 import com.graceon.core.common.Result
+import com.graceon.core.common.toUserFacingMessage
 import com.graceon.domain.data.CategoryData
 import com.graceon.domain.model.Prescription
+import com.graceon.domain.model.RANDOM_VERSE_DISPLAY_TEXT
+import com.graceon.domain.model.RANDOM_VERSE_PROMPT
 import com.graceon.domain.model.SavedPrescription
 import com.graceon.domain.model.WorryContext
 import com.graceon.domain.usecase.GeneratePrayerUseCase
@@ -50,7 +53,6 @@ class ResultViewModel(
         when (intent) {
             is ResultContract.Intent.GeneratePrayer -> generatePrayer()
             is ResultContract.Intent.SharePrescription -> sharePrescription()
-            is ResultContract.Intent.ShareAsImage -> shareAsImage()
             is ResultContract.Intent.SavePrescription -> savePrescription()
             is ResultContract.Intent.Reset -> reset()
         }
@@ -83,7 +85,11 @@ class ResultViewModel(
                 }
                 is Result.Error -> {
                     _state.value = _state.value.copy(isPrayerLoading = false)
-                    _effect.send(ResultContract.Effect.ShowError("기도문 생성에 실패했습니다."))
+                    _effect.send(
+                        ResultContract.Effect.ShowError(
+                            result.exception.toUserFacingMessage("기도문 생성에 실패했습니다. 잠시 후 다시 시도해주세요.")
+                        )
+                    )
                 }
                 is Result.Loading -> {}
             }
@@ -115,6 +121,10 @@ class ResultViewModel(
     }
 
     private fun resolveWorryText(): String {
+        if (customWorry == RANDOM_VERSE_PROMPT) {
+            return RANDOM_VERSE_DISPLAY_TEXT
+        }
+
         customWorry?.let { return decodeForDisplay(it) }
 
         val category = CategoryData.categories.firstOrNull { it.id == categoryId }
@@ -140,12 +150,6 @@ class ResultViewModel(
     private fun reset() {
         scope.launch {
             _effect.send(ResultContract.Effect.NavigateToHome)
-        }
-    }
-
-    private fun shareAsImage() {
-        scope.launch {
-            _effect.send(ResultContract.Effect.ShareAsImage)
         }
     }
 

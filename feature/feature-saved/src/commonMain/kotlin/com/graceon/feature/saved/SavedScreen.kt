@@ -1,7 +1,5 @@
 package com.graceon.feature.saved
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -44,7 +42,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -61,12 +58,14 @@ import com.graceon.core.ui.theme.GlassSurface
 import com.graceon.core.ui.theme.GlassSurfaceStrong
 import com.graceon.core.ui.theme.Primary
 import com.graceon.domain.model.SavedPrescription
-import kotlin.math.absoluteValue
 
 @Composable
 fun SavedScreen(
     viewModel: SavedViewModel,
     onNavigateBack: () -> Unit,
+    onShareText: (String) -> Unit,
+    onNavigateToWord: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     onNavigateHome: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
@@ -176,9 +175,7 @@ fun SavedScreen(
                         items(filteredList, key = { it.id }) { prescription ->
                             SavedPrescriptionCard(
                                 prescription = prescription,
-                                onDelete = {
-                                    viewModel.handleIntent(SavedContract.Intent.DeletePrescription(prescription.id))
-                                },
+                                onShare = { onShareText(buildShareText(prescription)) },
                                 onClick = { selectedPrescription = prescription }
                             )
                         }
@@ -189,8 +186,9 @@ fun SavedScreen(
             GraceOnBottomBar(
                 activeTab = GraceOnBottomTab.Saved,
                 onHomeClick = onNavigateHome,
-                onWordClick = onNavigateHome,
+                onWordClick = onNavigateToWord,
                 onSavedClick = {},
+                onProfileClick = onNavigateToProfile,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 20.dp, vertical = 18.dp)
@@ -199,6 +197,10 @@ fun SavedScreen(
             selectedPrescription?.let { prescription ->
                 SavedPrescriptionDetailDialog(
                     prescription = prescription,
+                    onDelete = {
+                        viewModel.handleIntent(SavedContract.Intent.DeletePrescription(prescription.id))
+                        selectedPrescription = null
+                    },
                     onDismiss = { selectedPrescription = null }
                 )
             }
@@ -251,8 +253,112 @@ private fun EmptyState() {
 @Composable
 private fun SavedPrescriptionCard(
     prescription: SavedPrescription,
-    onDelete: () -> Unit,
+    onShare: () -> Unit,
     onClick: () -> Unit
+) {
+    val verseParts = prescription.verse.split("(")
+    val verseText = verseParts.getOrNull(0)?.trim()?.replace("+", " ") ?: prescription.verse
+    val verseReference = verseParts.getOrNull(1)?.replace(")", "")?.trim()?.replace("+", " ").orEmpty()
+    val quotedVerseText = "\"$verseText\""
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        color = GlassSurfaceStrong,
+        shape = RoundedCornerShape(30.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+    ) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (verseReference.isNotBlank()) {
+                    Surface(
+                        color = GlassSurface,
+                        shape = RoundedCornerShape(999.dp)
+                    ) {
+                        Text(
+                            text = verseReference,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.size(1.dp))
+                }
+
+                Text(
+                    text = formatDate(prescription.savedAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Text(
+                text = quotedVerseText,
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 38.sp,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onShare) {
+                        Icon(
+                        imageVector = Icons.Default.IosShare,
+                        contentDescription = "공유",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.Bookmark,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = Primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun buildShareText(prescription: SavedPrescription): String {
+    val verse = prescription.verse.replace("+", " ")
+    val message = prescription.message.replace("+", " ")
+    val prayer = prescription.prayer?.replace("+", " ")
+
+    return buildString {
+        appendLine("[GraceOn 저장한 말씀]")
+        appendLine()
+        appendLine(verse)
+        appendLine()
+        appendLine(message)
+        if (!prayer.isNullOrBlank()) {
+            appendLine()
+            appendLine("기도문:")
+            appendLine(prayer)
+        }
+    }.trim()
+}
+
+@Composable
+private fun SavedPrescriptionDetailDialog(
+    prescription: SavedPrescription,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -283,154 +389,6 @@ private fun SavedPrescriptionCard(
     val verseText = verseParts.getOrNull(0)?.trim()?.replace("+", " ") ?: prescription.verse
     val verseReference = verseParts.getOrNull(1)?.replace(")", "")?.trim()?.replace("+", " ").orEmpty()
 
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = GlassSurfaceStrong,
-        shape = RoundedCornerShape(30.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            SavedHeroThumbnail(seed = prescription.id)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = GlassSurface,
-                    shape = RoundedCornerShape(999.dp)
-                ) {
-                    Text(
-                        text = formatDate(prescription.savedAt),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "삭제",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (verseReference.isNotBlank()) {
-                    Text(
-                        text = verseReference,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Text(
-                    text = verseText,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    lineHeight = 32.sp,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Surface(
-                color = GlassSurface,
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                Text(
-                    text = prescription.message.replace("+", " "),
-                    modifier = Modifier.padding(14.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 21.sp
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = formatSectionDate(prescription.savedAt),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Surface(
-                    color = Primary.copy(alpha = 0.18f),
-                    shape = RoundedCornerShape(999.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.IosShare,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = Color.White
-                        )
-                        Text(
-                            text = "보기",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SavedHeroThumbnail(seed: String) {
-    val palette = remember(seed) {
-        when (seed.hashCode().absoluteValue % 3) {
-            0 -> listOf(Color(0xFF111827), Color(0xFF0EA5E9), Color(0xFF38BDF8))
-            1 -> listOf(Color(0xFF0F172A), Color(0xFF14B8A6), Color(0xFF6EE7B7))
-            else -> listOf(Color(0xFF172554), Color(0xFF2563EB), Color(0xFFA78BFA))
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(Brush.linearGradient(colors = palette))
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0x7005070A))
-                    )
-                )
-        )
-    }
-}
-
-@Composable
-private fun SavedPrescriptionDetailDialog(
-    prescription: SavedPrescription,
-    onDismiss: () -> Unit
-) {
-    val verseParts = prescription.verse.split("(")
-    val verseText = verseParts.getOrNull(0)?.trim()?.replace("+", " ") ?: prescription.verse
-    val verseReference = verseParts.getOrNull(1)?.replace(")", "")?.trim()?.replace("+", " ").orEmpty()
-
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -456,12 +414,15 @@ private fun SavedPrescriptionDetailDialog(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "닫기")
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = "삭제")
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "닫기")
+                        }
                     }
                 }
-
-                SavedHeroThumbnail(seed = prescription.id + "detail")
 
                 if (verseReference.isNotBlank()) {
                     Text(
@@ -522,11 +483,11 @@ private fun SavedPrescriptionDetailDialog(
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 26.sp
-                            )
-                        }
+                        )
                     }
                 }
             }
+        }
         }
     }
 }

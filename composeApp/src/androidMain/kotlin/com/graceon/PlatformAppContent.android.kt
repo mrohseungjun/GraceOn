@@ -6,7 +6,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-internal actual fun PlatformAppContent(apiKey: String) {
+internal actual fun PlatformAppContent(
+    apiKey: String,
+    appVersion: String,
+    onShareText: (String) -> Unit,
+    onToggleDailyVerseNotification: (Boolean) -> Unit
+) {
     val context = LocalContext.current
     val dependencies = remember(context) {
         createGraceOnAndroidDependencies(
@@ -17,6 +22,7 @@ internal actual fun PlatformAppContent(apiKey: String) {
 
     GraceOnRoot(
         dependencies = dependencies,
+        appVersion = appVersion.ifBlank { BuildConfig.VERSION_NAME },
         onShareText = { text ->
             val sendIntent = Intent().apply {
                 action = Intent.ACTION_SEND
@@ -25,6 +31,12 @@ internal actual fun PlatformAppContent(apiKey: String) {
             }
             val chooser = Intent.createChooser(sendIntent, "말씀 공유하기")
             context.startActivity(chooser)
+        },
+        onToggleDailyVerseNotification = { enabled ->
+            DailyVerseNotificationScheduler.update(
+                context = context,
+                enabled = enabled
+            )
         }
     )
 }

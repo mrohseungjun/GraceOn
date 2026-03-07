@@ -62,8 +62,9 @@ fun ResultScreen(
     onNavigateBack: () -> Unit,
     onNavigateHome: () -> Unit,
     onNavigateToSaved: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     onShareText: (String) -> Unit = {},
-    onShareImage: () -> Unit = {}
+    onRetry: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -72,7 +73,6 @@ fun ResultScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is ResultContract.Effect.ShareContent -> onShareText(effect.text)
-                is ResultContract.Effect.ShareAsImage -> onShareImage()
                 is ResultContract.Effect.NavigateToHome -> onNavigateHome()
                 is ResultContract.Effect.ShowSaveSuccess -> snackbarHostState.showSnackbar("말씀이 저장되었습니다")
                 is ResultContract.Effect.ShowError -> snackbarHostState.showSnackbar(effect.message)
@@ -125,7 +125,7 @@ fun ResultScreen(
                     onGeneratePrayer = { viewModel.handleIntent(ResultContract.Intent.GeneratePrayer) },
                     onSave = { viewModel.handleIntent(ResultContract.Intent.SavePrescription) },
                     onShare = { viewModel.handleIntent(ResultContract.Intent.SharePrescription) },
-                    onShareImage = { viewModel.handleIntent(ResultContract.Intent.ShareAsImage) },
+                    onRetry = onRetry,
                     onReset = { viewModel.handleIntent(ResultContract.Intent.Reset) }
                 )
             }
@@ -135,6 +135,7 @@ fun ResultScreen(
                 onHomeClick = onNavigateHome,
                 onWordClick = {},
                 onSavedClick = onNavigateToSaved,
+                onProfileClick = onNavigateToProfile,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 20.dp, vertical = 18.dp)
@@ -272,7 +273,7 @@ private fun ResultActions(
     onGeneratePrayer: () -> Unit,
     onSave: () -> Unit,
     onShare: () -> Unit,
-    onShareImage: () -> Unit,
+    onRetry: () -> Unit,
     onReset: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -342,7 +343,7 @@ private fun ResultActions(
         }
 
         OutlinedButton(
-            onClick = onShareImage,
+            onClick = onRetry,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
@@ -352,7 +353,7 @@ private fun ResultActions(
         ) {
             Icon(Icons.Default.Create, contentDescription = null)
             Spacer(modifier = Modifier.size(6.dp))
-            Text("이미지로 공유")
+            Text("다시 받기")
         }
 
         Button(
