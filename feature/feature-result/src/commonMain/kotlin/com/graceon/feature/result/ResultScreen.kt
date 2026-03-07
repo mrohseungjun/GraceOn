@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
@@ -43,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -87,7 +89,7 @@ fun ResultScreen(
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,
-                Color(0xFF07131E)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
             )
         ),
         topBarContainerColor = Color.Transparent
@@ -146,15 +148,25 @@ fun ResultScreen(
 
 @Composable
 private fun VerseHeroCard(state: ResultContract.State) {
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val verseParts = state.prescription.verse.split("(")
     val verseText = verseParts.getOrNull(0)?.trim()?.replace("+", " ") ?: state.prescription.verse
     val verseReference = verseParts.getOrNull(1)?.replace(")", "")?.trim()?.replace("+", " ").orEmpty()
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (isLightTheme) 14.dp else 4.dp,
+                shape = RoundedCornerShape(32.dp),
+                clip = false
+            ),
         color = GlassSurfaceStrong,
         shape = RoundedCornerShape(32.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isLightTheme) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.78f) else GlassBorder
+        )
     ) {
         Column {
             Box(
@@ -164,9 +176,9 @@ private fun VerseHeroCard(state: ResultContract.State) {
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF1E293B),
-                                Color(0xFF0F172A),
-                                Color(0xFF05070A)
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                MaterialTheme.colorScheme.background
                             )
                         )
                     )
@@ -194,7 +206,7 @@ private fun VerseHeroCard(state: ResultContract.State) {
                     Text(
                         text = "\"",
                         style = MaterialTheme.typography.displayLarge,
-                        color = Color.White.copy(alpha = 0.92f)
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.92f)
                     )
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -203,7 +215,7 @@ private fun VerseHeroCard(state: ResultContract.State) {
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             lineHeight = 38.sp
                         )
                         if (verseReference.isNotBlank()) {
@@ -212,21 +224,21 @@ private fun VerseHeroCard(state: ResultContract.State) {
                                 text = verseReference,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color.White.copy(alpha = 0.82f)
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
                             )
                         }
                     }
 
                     Surface(
-                        color = Color.White.copy(alpha = 0.10f),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.16f),
                         shape = RoundedCornerShape(999.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Text(
                             text = if (state.isAiMode) "AI 맞춤 말씀" else "Daily Grace Card",
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -241,11 +253,21 @@ private fun InsightCard(
     title: String,
     text: String
 ) {
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (isLightTheme) 8.dp else 2.dp,
+                shape = RoundedCornerShape(24.dp),
+                clip = false
+            ),
         color = GlassSurface,
         shape = RoundedCornerShape(24.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isLightTheme) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f) else GlassBorder
+        )
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -255,7 +277,7 @@ private fun InsightCard(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = text,
@@ -286,15 +308,15 @@ private fun ResultActions(
                     .height(58.dp),
                 shape = RoundedCornerShape(999.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 if (state.isPrayerLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.height(22.dp),
                         strokeWidth = 2.dp,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
                     Icon(Icons.Default.AutoAwesome, contentDescription = null)
@@ -314,9 +336,9 @@ private fun ResultActions(
                 shape = RoundedCornerShape(999.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (state.isSaved) Primary.copy(alpha = 0.22f) else GlassSurfaceStrong,
-                    contentColor = Color.White,
+                    contentColor = MaterialTheme.colorScheme.onBackground,
                     disabledContainerColor = Primary.copy(alpha = 0.22f),
-                    disabledContentColor = Color.White
+                    disabledContentColor = MaterialTheme.colorScheme.onBackground
                 )
             ) {
                 Icon(
@@ -334,7 +356,7 @@ private fun ResultActions(
                     .height(54.dp),
                 shape = RoundedCornerShape(999.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
             ) {
                 Icon(Icons.Default.IosShare, contentDescription = null)
                 Spacer(modifier = Modifier.size(6.dp))
@@ -349,7 +371,7 @@ private fun ResultActions(
                 .height(54.dp),
             shape = RoundedCornerShape(999.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
         ) {
             Icon(Icons.Default.Create, contentDescription = null)
             Spacer(modifier = Modifier.size(6.dp))
@@ -364,7 +386,7 @@ private fun ResultActions(
             shape = RoundedCornerShape(999.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = GlassSurfaceStrong,
-                contentColor = Color.White
+                contentColor = MaterialTheme.colorScheme.onBackground
             )
         ) {
             Icon(Icons.Default.Home, contentDescription = null)

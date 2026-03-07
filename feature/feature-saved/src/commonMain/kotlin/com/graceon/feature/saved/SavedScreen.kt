@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
@@ -44,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -103,8 +105,8 @@ fun SavedScreen(
                         disabledContainerColor = GlassSurfaceStrong,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
                         focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -125,7 +127,7 @@ fun SavedScreen(
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,
-                Color(0xFF07131E)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
             )
         ),
         topBarContainerColor = Color.Transparent,
@@ -210,6 +212,7 @@ fun SavedScreen(
 
 @Composable
 private fun EmptyState() {
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -217,10 +220,19 @@ private fun EmptyState() {
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = if (isLightTheme) 10.dp else 2.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    clip = false
+                ),
             color = GlassSurfaceStrong,
             shape = RoundedCornerShape(28.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (isLightTheme) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f) else GlassBorder
+            )
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
@@ -237,7 +249,7 @@ private fun EmptyState() {
                     text = "아직 저장된 말씀이 없습니다",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "마음에 남는 말씀을 저장해두면 이곳에서 다시 꺼내볼 수 있습니다.",
@@ -256,6 +268,7 @@ private fun SavedPrescriptionCard(
     onShare: () -> Unit,
     onClick: () -> Unit
 ) {
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val verseParts = prescription.verse.split("(")
     val verseText = verseParts.getOrNull(0)?.trim()?.replace("+", " ") ?: prescription.verse
     val verseReference = verseParts.getOrNull(1)?.replace(")", "")?.trim()?.replace("+", " ").orEmpty()
@@ -264,10 +277,18 @@ private fun SavedPrescriptionCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(
+                elevation = if (isLightTheme) 12.dp else 3.dp,
+                shape = RoundedCornerShape(30.dp),
+                clip = false
+            )
             .clickable(onClick = onClick),
         color = GlassSurfaceStrong,
         shape = RoundedCornerShape(30.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isLightTheme) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.78f) else GlassBorder
+        )
     ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Row(
@@ -302,7 +323,7 @@ private fun SavedPrescriptionCard(
             Text(
                 text = quotedVerseText,
                 style = MaterialTheme.typography.headlineSmall,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.SemiBold,
                 lineHeight = 38.sp,
                 maxLines = 4,
@@ -361,6 +382,7 @@ private fun SavedPrescriptionDetailDialog(
     onDismiss: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -391,10 +413,19 @@ private fun SavedPrescriptionDetailDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = if (isLightTheme) 18.dp else 6.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    clip = false
+                ),
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(28.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (isLightTheme) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.82f) else GlassBorder
+            )
         ) {
             Column(
                 modifier = Modifier
@@ -412,7 +443,7 @@ private fun SavedPrescriptionDetailDialog(
                         text = "저장된 말씀",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         IconButton(onClick = { showDeleteDialog = true }) {
@@ -436,13 +467,17 @@ private fun SavedPrescriptionDetailDialog(
                     text = verseText,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     lineHeight = 38.sp
                 )
 
                 Surface(
                     color = GlassSurface,
-                    shape = RoundedCornerShape(22.dp)
+                    shape = RoundedCornerShape(22.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (isLightTheme) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.58f) else GlassBorder
+                    )
                 ) {
                     Column(
                         modifier = Modifier.padding(18.dp),
@@ -452,7 +487,7 @@ private fun SavedPrescriptionDetailDialog(
                             text = "AI의 한마디",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
                             text = prescription.message.replace("+", " "),
@@ -466,7 +501,11 @@ private fun SavedPrescriptionDetailDialog(
                 prescription.prayer?.let { prayer ->
                     Surface(
                         color = GlassSurfaceStrong,
-                        shape = RoundedCornerShape(22.dp)
+                        shape = RoundedCornerShape(22.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isLightTheme) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.62f) else GlassBorder
+                        )
                     ) {
                         Column(
                             modifier = Modifier.padding(18.dp),
@@ -476,7 +515,7 @@ private fun SavedPrescriptionDetailDialog(
                                 text = "기도문",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
                                 text = prayer,

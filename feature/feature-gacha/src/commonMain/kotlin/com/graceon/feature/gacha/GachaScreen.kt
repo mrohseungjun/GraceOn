@@ -47,6 +47,7 @@ import com.graceon.core.ui.component.GraceOnScaffold
 import com.graceon.core.ui.theme.GlassBorder
 import com.graceon.core.ui.theme.GlassSurfaceStrong
 import com.graceon.core.ui.theme.Primary
+import com.graceon.core.ui.theme.Tertiary
 import com.graceon.domain.model.Prescription
 
 @Composable
@@ -82,7 +83,7 @@ fun GachaScreen(
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,
-                Color(0xFF07131E)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
             )
         ),
         topBarContainerColor = Color.Transparent
@@ -119,7 +120,7 @@ fun GachaScreen(
                             text = copy.title,
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             textAlign = TextAlign.Center,
                             lineHeight = 34.sp
                         )
@@ -159,10 +160,10 @@ fun GachaScreen(
                         .height(58.dp),
                     shape = RoundedCornerShape(999.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black,
-                        disabledContainerColor = Color.White.copy(alpha = 0.12f),
-                        disabledContentColor = Color.White.copy(alpha = 0.40f)
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.55f)
                     )
                 ) {
                     if (state.stage == GachaContract.State.Stage.Idle) {
@@ -176,7 +177,7 @@ fun GachaScreen(
                         CircularProgressIndicator(
                             modifier = Modifier.size(22.dp),
                             strokeWidth = 2.dp,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                         Text("말씀을 준비하는 중", fontWeight = FontWeight.Bold)
@@ -207,7 +208,7 @@ private fun LoadingArtwork(stage: GachaContract.State.Stage) {
 
         Surface(
             modifier = Modifier.size(124.dp),
-            color = GlassSurfaceStrong,
+                    color = GlassSurfaceStrong,
             shape = RoundedCornerShape(999.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
         ) {
@@ -252,7 +253,7 @@ private fun ProgressPanel(progress: Float) {
                     text = "은혜를 불러오는 중...",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "${(progress * 100).toInt()}%",
@@ -265,7 +266,7 @@ private fun ProgressPanel(progress: Float) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(10.dp)
-                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(999.dp))
+                    .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(999.dp))
             ) {
                 Box(
                     modifier = Modifier
@@ -273,7 +274,7 @@ private fun ProgressPanel(progress: Float) {
                         .height(10.dp)
                         .background(
                             Brush.horizontalGradient(
-                                colors = listOf(Primary, Color(0xFF60A5FA))
+                                colors = listOf(Primary, Tertiary)
                             ),
                             RoundedCornerShape(999.dp)
                         )
@@ -307,7 +308,7 @@ private fun TipPanel(message: String) {
                     text = "오늘의 팁",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = message,

@@ -59,7 +59,7 @@ fun ProfileScreen(
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,
-                MaterialTheme.colorScheme.background
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f)
             )
         ),
         topBarContainerColor = Color.Transparent
@@ -282,11 +282,11 @@ private fun ThemeOption(
 ) {
     Surface(
         modifier = modifier.clickable(onClick = onClick),
-        color = if (selected) Primary.copy(alpha = 0.18f) else GlassSurfaceStrong,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else GlassSurfaceStrong,
         shape = RoundedCornerShape(20.dp),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            if (selected) Primary.copy(alpha = 0.4f) else GlassBorder
+            if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else GlassBorder
         )
     ) {
         Column(
@@ -299,7 +299,7 @@ private fun ThemeOption(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (selected) Primary else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = label,

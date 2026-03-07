@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.graceon.core.ui.theme.Primary
+import com.graceon.core.ui.theme.Tertiary
 
 enum class GraceOnBottomTab {
     Home,
@@ -63,7 +64,7 @@ fun GraceOnAmbientBackground(modifier: Modifier = Modifier) {
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFF2563EB).copy(alpha = 0.20f),
+                            Tertiary.copy(alpha = 0.18f),
                             Color.Transparent
                         )
                     ),
@@ -82,18 +83,17 @@ fun GraceOnBottomBar(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDarkTheme = MaterialTheme.colorScheme.background.red < 0.5f
     Surface(
         modifier = modifier.shadow(
             elevation = 24.dp,
             shape = RoundedCornerShape(999.dp),
             clip = false
         ),
-        color = if (isDarkTheme) Color(0xFF0D141D).copy(alpha = 0.96f) else Color.White.copy(alpha = 0.96f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         shape = RoundedCornerShape(999.dp),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            if (isDarkTheme) Color.White.copy(alpha = 0.08f) else Color(0x14000000)
+            MaterialTheme.colorScheme.outlineVariant
         )
     ) {
         Row(
@@ -148,7 +148,7 @@ private fun BottomBarButton(
                 modifier = Modifier
                     .size(34.dp)
                     .background(
-                        color = if (active) Primary.copy(alpha = 0.22f) else Color.Transparent,
+                        color = if (active) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f) else Color.Transparent,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -157,14 +157,14 @@ private fun BottomBarButton(
                     text = iconLabel,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (active) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                color = if (active) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (active) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

@@ -60,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -74,7 +75,6 @@ import com.graceon.core.ui.theme.GlassBorder
 import com.graceon.core.ui.theme.GlassSurface
 import com.graceon.core.ui.theme.GlassSurfaceStrong
 import com.graceon.core.ui.theme.Primary
-import com.graceon.core.ui.theme.TextSecondary
 import com.graceon.domain.model.Category
 import com.graceon.domain.model.ColorType
 import com.graceon.domain.model.DetailWorry
@@ -117,7 +117,7 @@ fun WorryScreen(
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,
-                Color(0xFF07131E)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
             )
         ),
         topBarContainerColor = Color.Transparent
@@ -243,18 +243,8 @@ private fun IntroStep(
                     text = "GraceOn.",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-
-                Surface(
-                    color = GlassSurfaceStrong,
-                    shape = RoundedCornerShape(999.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
-                ) {
-                    TextButton(onClick = onNavigateToSaved) {
-                        Text("보관함", color = MaterialTheme.colorScheme.onBackground)
-                    }
-                }
             }
         }
 
@@ -263,7 +253,7 @@ private fun IntroStep(
                 Text(
                     text = "안녕하세요,\n오늘 마음은 어떠신가요?",
                     style = MaterialTheme.typography.headlineLarge,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 38.sp
                 )
@@ -293,7 +283,7 @@ private fun IntroStep(
                     text = "상황별 맞춤 위로 찾기",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 TextButton(onClick = onStartCategoryMode) {
                     Text("전체보기", color = Primary)
@@ -328,7 +318,7 @@ private fun IntroStep(
                             text = "최근 저장한 말씀",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
@@ -380,7 +370,7 @@ private fun HeroModeCard(
                 Box(
                     modifier = Modifier
                         .size(54.dp)
-                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp)),
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.22f), RoundedCornerShape(18.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -393,7 +383,7 @@ private fun HeroModeCard(
                     text = title,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     lineHeight = 32.sp
                 )
                 Text(
@@ -412,15 +402,16 @@ private fun IntroCategoryCard(
     category: Category,
     onClick: () -> Unit
 ) {
-    val accent = category.colorType.accentColor()
+    val palette = category.colorType.palette()
+    val accent = palette.accent
     val subtitle = category.details.take(2).joinToString(", ") { it.title }
 
     Card(
         onClick = onClick,
         modifier = Modifier.height(150.dp),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = GlassSurfaceStrong),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        colors = CardDefaults.cardColors(containerColor = palette.container),
+        border = androidx.compose.foundation.BorderStroke(1.dp, palette.border)
     ) {
         Column(
             modifier = Modifier
@@ -446,12 +437,12 @@ private fun IntroCategoryCard(
                     text = category.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 18.sp
@@ -521,7 +512,8 @@ private fun DetailSelectionStep(
     category: Category,
     onSelectDetail: (DetailWorry) -> Unit
 ) {
-    val accent = category.colorType.accentColor()
+    val palette = category.colorType.palette()
+    val accent = palette.accent
 
     Column(
         modifier = Modifier
@@ -531,7 +523,7 @@ private fun DetailSelectionStep(
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         Surface(
-            color = accent.copy(alpha = 0.16f),
+            color = palette.container,
             shape = RoundedCornerShape(999.dp)
         ) {
             Row(
@@ -564,9 +556,9 @@ private fun DetailSelectionStep(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onSelectDetail(detail) },
-                color = GlassSurfaceStrong,
+                color = palette.container.copy(alpha = 0.92f),
                 shape = RoundedCornerShape(22.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+                border = androidx.compose.foundation.BorderStroke(1.dp, palette.border)
             ) {
                 Row(
                     modifier = Modifier
@@ -580,7 +572,7 @@ private fun DetailSelectionStep(
                             text = detail.title,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -633,7 +625,7 @@ private fun CustomInputStep(
                     Text(
                         text = "AI 고민 나누기",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -665,8 +657,8 @@ private fun CustomInputStep(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 cursorColor = Primary,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
+                focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
                 focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
@@ -699,10 +691,10 @@ private fun CustomInputStep(
             shape = RoundedCornerShape(999.dp),
             enabled = customWorry.isNotBlank(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black,
-                disabledContainerColor = Color.White.copy(alpha = 0.12f),
-                disabledContentColor = Color.White.copy(alpha = 0.40f)
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.55f)
             )
         ) {
             Icon(
@@ -725,7 +717,7 @@ private fun StepHeader(
             text = title,
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             lineHeight = 38.sp
         )
         Text(
@@ -751,6 +743,12 @@ private fun WorryContract.State.Step.stepIndex(): Int = when (this) {
     WorryContract.State.Step.CustomInput -> 3
 }
 
+private data class CategoryPalette(
+    val accent: Color,
+    val container: Color,
+    val border: Color
+)
+
 private fun IconType.toIcon(): ImageVector = when (this) {
     IconType.BRIEFCASE -> Icons.Outlined.WorkOutline
     IconType.USER -> Icons.Default.PersonOutline
@@ -758,9 +756,60 @@ private fun IconType.toIcon(): ImageVector = when (this) {
     IconType.HEART -> Icons.Default.FavoriteBorder
 }
 
-private fun ColorType.accentColor(): Color = when (this) {
-    ColorType.BLUE -> Color(0xFF38BDF8)
-    ColorType.PINK -> Color(0xFFFB7185)
-    ColorType.YELLOW -> Color(0xFFFBBF24)
-    ColorType.PURPLE -> Color(0xFFA78BFA)
+@Composable
+private fun ColorType.palette(): CategoryPalette {
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
+
+    return if (isLightTheme) {
+        when (this) {
+            ColorType.BLUE -> CategoryPalette(
+                accent = Color(0xFF936D53),
+                container = Color(0xFFF2E4D6),
+                border = Color(0xFFE0C8B5)
+            )
+            ColorType.PINK -> CategoryPalette(
+                accent = Color(0xFFB57A6C),
+                container = Color(0xFFF4E1D8),
+                border = Color(0xFFE6C5B8)
+            )
+            ColorType.YELLOW -> CategoryPalette(
+                accent = Color(0xFFC99960),
+                container = Color(0xFFF5E8D5),
+                border = Color(0xFFE7D0AF)
+            )
+            ColorType.PURPLE -> CategoryPalette(
+                accent = Color(0xFF9C7368),
+                container = Color(0xFFF1E1DA),
+                border = Color(0xFFE0C7BC)
+            )
+        }
+    } else {
+        when (this) {
+            ColorType.BLUE -> CategoryPalette(
+                accent = Color(0xFFD7B59C),
+                container = Color(0xFF2F2420),
+                border = Color(0xFF4C3931)
+            )
+            ColorType.PINK -> CategoryPalette(
+                accent = Color(0xFFD2A091),
+                container = Color(0xFF322320),
+                border = Color(0xFF523A34)
+            )
+            ColorType.YELLOW -> CategoryPalette(
+                accent = Color(0xFFE0BC8F),
+                container = Color(0xFF34281F),
+                border = Color(0xFF5C4735)
+            )
+            ColorType.PURPLE -> CategoryPalette(
+                accent = Color(0xFFC9A59C),
+                container = Color(0xFF302220),
+                border = Color(0xFF4B3834)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ColorType.accentColor(): Color {
+    return palette().accent
 }

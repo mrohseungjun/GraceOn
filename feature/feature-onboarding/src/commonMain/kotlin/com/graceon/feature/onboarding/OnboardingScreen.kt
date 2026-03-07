@@ -41,6 +41,7 @@ import com.graceon.core.ui.theme.GlassBorder
 import com.graceon.core.ui.theme.GlassSurfaceStrong
 import com.graceon.core.ui.theme.Primary
 import com.graceon.core.ui.theme.Secondary
+import com.graceon.core.ui.theme.TextPrimary
 
 private const val ONBOARDING_HERO_IMAGE =
     "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?q=80&w=1200&auto=format&fit=crop"
@@ -88,9 +89,9 @@ fun OnboardingScreen(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color(0x3305070A),
-                            Color(0xAA05070A),
-                            Color(0xFF05070A)
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.18f),
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.72f),
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.98f)
                         )
                     )
                 )
@@ -134,7 +135,7 @@ private fun TopLoginBar() {
                 Text(
                     text = "로그인",
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color.White.copy(alpha = 0.86f)
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Login,
@@ -156,15 +157,15 @@ private fun HeroContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Surface(
-            color = Color.White.copy(alpha = 0.10f),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.20f),
             shape = RoundedCornerShape(999.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Text(
                 text = "GraceOn",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
                 style = MaterialTheme.typography.labelLarge,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.SemiBold
             )
         }
@@ -175,7 +176,7 @@ private fun HeroContent(
             text = "마음에 닿는\n단 하나의 위로",
             style = MaterialTheme.typography.displayLarge,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             lineHeight = 44.sp
         )
@@ -199,8 +200,8 @@ private fun HeroContent(
                 .height(58.dp),
             shape = RoundedCornerShape(999.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             Text(
@@ -218,9 +219,9 @@ private fun HeroContent(
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(999.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.White.copy(alpha = 0.88f)
+                contentColor = MaterialTheme.colorScheme.onBackground
             )
         ) {
             Text(
@@ -272,7 +273,7 @@ private fun FeatureCard(feature: OnboardingFeature) {
                     text = feature.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
