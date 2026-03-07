@@ -1,47 +1,84 @@
 package com.graceon.feature.worry
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.outlined.Send
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.outlined.MailOutline
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.outlined.WorkOutline
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import com.graceon.core.ui.component.GraceOnAmbientBackground
+import com.graceon.core.ui.component.GraceOnBottomBar
+import com.graceon.core.ui.component.GraceOnBottomTab
 import com.graceon.core.ui.component.GraceOnScaffold
-import com.graceon.core.ui.theme.*
+import com.graceon.core.ui.theme.GlassBorder
+import com.graceon.core.ui.theme.GlassSurface
+import com.graceon.core.ui.theme.GlassSurfaceStrong
+import com.graceon.core.ui.theme.Primary
+import com.graceon.core.ui.theme.TextSecondary
 import com.graceon.domain.model.Category
 import com.graceon.domain.model.ColorType
+import com.graceon.domain.model.DetailWorry
 import com.graceon.domain.model.IconType
 
 @Composable
@@ -52,13 +89,7 @@ fun WorryScreen(
     onNavigateToSaved: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
-    val currentTitle = when (state.step) {
-        WorryContract.State.Step.Intro -> null
-        WorryContract.State.Step.CategorySelection -> "고민 선택"
-        WorryContract.State.Step.DetailSelection -> state.selectedCategory?.title ?: "세부 고민"
-        WorryContract.State.Step.CustomInput -> "AI 고민 나누기"
-    }
-    val canNavigateBack = state.step != WorryContract.State.Step.Intro
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -72,75 +103,247 @@ fun WorryScreen(
                     )
                 }
                 is WorryContract.Effect.NavigateBack -> onNavigateBack()
-                is WorryContract.Effect.ShowError -> {
-                    // Show snackbar or toast
-                }
+                is WorryContract.Effect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
 
     GraceOnScaffold(
-        title = currentTitle,
-        onNavigateBack = if (canNavigateBack) {
+        title = state.step.titleOrNull(state.selectedCategory),
+        onNavigateBack = if (state.step == WorryContract.State.Step.Intro) null else {
             { viewModel.handleIntent(WorryContract.Intent.NavigateBack) }
-        } else {
-            null
         },
+        snackbarHostState = snackbarHostState,
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f)
+                Color(0xFF07131E)
             )
-        )
+        ),
+        topBarContainerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            AnimatedContent(
-                targetState = state.step,
-                transitionSpec = {
-                    val targetIndex = targetState.stepIndex()
-                    val initialIndex = initialState.stepIndex()
-                    val forward = targetIndex >= initialIndex
+            GraceOnAmbientBackground()
 
-                    val enter = slideInHorizontally(
-                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
-                    ) { fullWidth -> if (forward) fullWidth else -fullWidth } +
-                        fadeIn(animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing))
-
-                    val exit = slideOutHorizontally(
-                        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing)
-                    ) { fullWidth -> if (forward) -fullWidth else fullWidth } +
-                        fadeOut(animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing))
-
-                    enter togetherWith exit using SizeTransform(clip = false)
+            AnimatedWorryContent(
+                state = state,
+                onStartCategoryMode = {
+                    viewModel.handleIntent(WorryContract.Intent.StartCategoryMode)
                 },
-                label = "worry_step_transition"
-            ) { step ->
-                when (step) {
-                    WorryContract.State.Step.Intro -> IntroStep(
-                        onCategoryMode = { viewModel.handleIntent(WorryContract.Intent.StartCategoryMode) },
-                        onAiMode = { viewModel.handleIntent(WorryContract.Intent.StartAiMode) },
-                        onSavedPrescriptions = onNavigateToSaved
-                    )
-                    WorryContract.State.Step.CategorySelection -> CategorySelectionStep(
-                        categories = state.categories,
-                        onSelectCategory = { viewModel.handleIntent(WorryContract.Intent.SelectCategory(it)) }
-                    )
-                    WorryContract.State.Step.DetailSelection -> {
-                        state.selectedCategory?.let { category ->
-                            DetailSelectionStep(
-                                category = category,
-                                onSelectDetail = { viewModel.handleIntent(WorryContract.Intent.SelectDetail(it)) }
-                            )
-                        } ?: Box(modifier = Modifier.fillMaxSize())
+                onStartAiMode = {
+                    viewModel.handleIntent(WorryContract.Intent.StartAiMode)
+                },
+                onSelectCategory = {
+                    viewModel.handleIntent(WorryContract.Intent.SelectCategory(it))
+                },
+                onSelectDetail = {
+                    viewModel.handleIntent(WorryContract.Intent.SelectDetail(it))
+                },
+                onWorryChange = {
+                    viewModel.handleIntent(WorryContract.Intent.UpdateCustomWorry(it))
+                },
+                onConfirm = {
+                    viewModel.handleIntent(WorryContract.Intent.ConfirmCustomWorry)
+                },
+                onNavigateToSaved = onNavigateToSaved
+            )
+
+            if (state.step == WorryContract.State.Step.Intro) {
+                GraceOnBottomBar(
+                    activeTab = GraceOnBottomTab.Home,
+                    onHomeClick = {},
+                    onWordClick = {
+                        viewModel.handleIntent(WorryContract.Intent.StartCategoryMode)
+                    },
+                    onSavedClick = onNavigateToSaved,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+private fun AnimatedWorryContent(
+    state: WorryContract.State,
+    onStartCategoryMode: () -> Unit,
+    onStartAiMode: () -> Unit,
+    onSelectCategory: (Category) -> Unit,
+    onSelectDetail: (DetailWorry) -> Unit,
+    onWorryChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onNavigateToSaved: () -> Unit
+) {
+    AnimatedContent(
+        targetState = state.step,
+        transitionSpec = {
+            slideInHorizontally { it / 6 } + fadeIn() togetherWith
+                slideOutHorizontally { -it / 8 } + fadeOut()
+        },
+        label = "worry_content"
+    ) { step ->
+        when (step) {
+            WorryContract.State.Step.Intro -> IntroStep(
+                categories = state.categories,
+                onStartCategoryMode = onStartCategoryMode,
+                onStartAiMode = onStartAiMode,
+                onSelectCategory = onSelectCategory,
+                onNavigateToSaved = onNavigateToSaved
+            )
+            WorryContract.State.Step.CategorySelection -> CategorySelectionStep(
+                categories = state.categories,
+                onSelectCategory = onSelectCategory
+            )
+            WorryContract.State.Step.DetailSelection -> state.selectedCategory?.let {
+                DetailSelectionStep(category = it, onSelectDetail = onSelectDetail)
+            }
+            WorryContract.State.Step.CustomInput -> CustomInputStep(
+                customWorry = state.customWorry,
+                isAiMode = state.isAiMode,
+                onWorryChange = onWorryChange,
+                onConfirm = onConfirm
+            )
+        } ?: Spacer(modifier = Modifier.fillMaxSize())
+    }
+}
+
+@Composable
+private fun IntroStep(
+    categories: List<Category>,
+    onStartCategoryMode: () -> Unit,
+    onStartAiMode: () -> Unit,
+    onSelectCategory: (Category) -> Unit,
+    onNavigateToSaved: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "GraceOn.",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Surface(
+                    color = GlassSurfaceStrong,
+                    shape = RoundedCornerShape(999.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+                ) {
+                    TextButton(onClick = onNavigateToSaved) {
+                        Text("보관함", color = MaterialTheme.colorScheme.onBackground)
                     }
-                    WorryContract.State.Step.CustomInput -> CustomInputStep(
-                        customWorry = state.customWorry,
-                        onWorryChange = { viewModel.handleIntent(WorryContract.Intent.UpdateCustomWorry(it)) },
-                        onConfirm = { viewModel.handleIntent(WorryContract.Intent.ConfirmCustomWorry) }
+                }
+            }
+        }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "안녕하세요,\n오늘 마음은 어떠신가요?",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 38.sp
+                )
+                Text(
+                    text = "당신의 이야기에 귀 기울일 준비가 되었어요.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        item {
+            HeroModeCard(
+                title = "AI에게 지금 마음 나누기",
+                description = "자유롭게 적어주시면 GraceOn이 말씀과 기도문으로 응답합니다.",
+                buttonLabel = "AI 위로 시작하기",
+                onClick = onStartAiMode
+            )
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "상황별 맞춤 위로 찾기",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                TextButton(onClick = onStartCategoryMode) {
+                    Text("전체보기", color = Primary)
+                }
+            }
+        }
+
+        item {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.heightIn(min = 260.dp, max = 420.dp),
+                userScrollEnabled = false,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(categories.take(4)) { category ->
+                    IntroCategoryCard(category = category, onClick = { onSelectCategory(category) })
+                }
+            }
+        }
+
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = GlassSurface,
+                shape = RoundedCornerShape(28.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onNavigateToSaved)
+                        .padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth(0.88f)) {
+                        Text(
+                            text = "최근 저장한 말씀",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "마음에 남는 말씀을 다시 꺼내보고 기도문도 확인하세요.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 20.sp
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = Primary
                     )
                 }
             }
@@ -149,247 +352,89 @@ fun WorryScreen(
 }
 
 @Composable
-private fun WorryStepLayout(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp)
-            .padding(top = 12.dp, bottom = 20.dp)
-    ) {
-        Spacer(modifier = Modifier.height(8.dp))
-        content()
-    }
-}
-
-@Composable
-private fun WorryHeader(
+private fun HeroModeCard(
     title: String,
-    subtitle: String?,
-    modifier: Modifier = Modifier
+    description: String,
+    buttonLabel: String,
+    onClick: () -> Unit
 ) {
-    Column(modifier = modifier) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            lineHeight = 36.sp
-        )
-
-        if (!subtitle.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-private fun WorryContract.State.Step.stepIndex(): Int = when (this) {
-    WorryContract.State.Step.Intro -> 0
-    WorryContract.State.Step.CategorySelection -> 1
-    WorryContract.State.Step.DetailSelection -> 2
-    WorryContract.State.Step.CustomInput -> 3
-}
-
-@Composable
-private fun IntroStep(
-    onCategoryMode: () -> Unit,
-    onAiMode: () -> Unit,
-    onSavedPrescriptions: () -> Unit = {}
-) {
-    var isVisible by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isVisible) 1f else 0.8f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "scale"
-    )
-
-    WorryStepLayout(modifier = Modifier.scale(scale)) {
-        Column(
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassSurfaceStrong,
+        shape = RoundedCornerShape(32.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+    ) {
+        Box(
             modifier = Modifier
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // App Icon
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Favorite,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                .fillMaxWidth()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Primary.copy(alpha = 0.25f),
+                            Color.Transparent
+                        )
+                    )
                 )
+                .padding(22.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = Primary
+                    )
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    lineHeight = 32.sp
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 24.sp
+                )
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Text(buttonLabel, fontWeight = FontWeight.Bold)
+                }
             }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            Text(
-                text = "Grace Note",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "마음이 지칠 때, 위로가 필요할 때\n당신에게 꼭 맞는 말씀을 전해드려요",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                lineHeight = 24.sp
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            IntroActions(
-                onCategoryMode = onCategoryMode,
-                onAiMode = onAiMode,
-                onSavedPrescriptions = onSavedPrescriptions
-            )
         }
     }
 }
 
 @Composable
-private fun IntroActions(
-    onCategoryMode: () -> Unit,
-    onAiMode: () -> Unit,
-    onSavedPrescriptions: () -> Unit
-) {
-    Button(
-        onClick = onCategoryMode,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        shape = RoundedCornerShape(18.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.PlayArrow,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "고민 카테고리 선택",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-
-    Spacer(modifier = Modifier.height(12.dp))
-
-    FilledTonalButton(
-        onClick = onAiMode,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        shape = RoundedCornerShape(18.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.PlayArrow,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "AI에게 고민 나누기",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-
-    Spacer(modifier = Modifier.height(24.dp))
-
-    TextButton(onClick = onSavedPrescriptions) {
-        Text(
-            text = "저장된 말씀 보기",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-    }
-}
-
-@Composable
-private fun CategorySelectionStep(
-    categories: List<Category>,
-    onSelectCategory: (Category) -> Unit
-) {
-    WorryStepLayout {
-        WorryHeader(
-            title = "어떤 고민이\n마음을 무겁게 하나요?",
-            subtitle = "카테고리를 선택해주세요"
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        CategoryGrid(
-            categories = categories,
-            onSelectCategory = onSelectCategory
-        )
-    }
-}
-
-@Composable
-private fun CategoryGrid(
-    categories: List<Category>,
-    onSelectCategory: (Category) -> Unit
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(categories) { category ->
-            CategoryCard(
-                category = category,
-                onClick = { onSelectCategory(category) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun CategoryCard(
+private fun IntroCategoryCard(
     category: Category,
     onClick: () -> Unit
 ) {
-    val icon = category.iconType.toIcon()
-    val (color, bgColor) = category.colorType.toCategoryColors()
+    val accent = category.colorType.accentColor()
+    val subtitle = category.details.take(2).joinToString(", ") { it.title }
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        modifier = Modifier.height(140.dp)
+        modifier = Modifier.height(150.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = GlassSurfaceStrong),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
     ) {
         Column(
             modifier = Modifier
@@ -400,24 +445,63 @@ private fun CategoryCard(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(color.copy(alpha = 0.15f)),
+                    .background(accent.copy(alpha = 0.18f), RoundedCornerShape(16.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = icon,
+                    imageVector = category.iconType.toIcon(),
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = color
+                    tint = accent
                 )
             }
 
-            Text(
-                text = category.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = color
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = category.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategorySelectionStep(
+    categories: List<Category>,
+    onSelectCategory: (Category) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        StepHeader(
+            title = "어떤 영역에서\n위로가 필요하신가요?",
+            subtitle = "가장 고민이 되는 영역을 선택해주세요."
+        )
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.heightIn(min = 280.dp),
+            userScrollEnabled = false,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(categories) { category ->
+                IntroCategoryCard(category = category, onClick = { onSelectCategory(category) })
+            }
         }
     }
 }
@@ -425,235 +509,241 @@ private fun CategoryCard(
 @Composable
 private fun DetailSelectionStep(
     category: Category,
-    onSelectDetail: (com.graceon.domain.model.DetailWorry) -> Unit
+    onSelectDetail: (DetailWorry) -> Unit
 ) {
-    val icon = category.iconType.toIcon()
-    val (color, bgColor) = category.colorType.toCategoryColors()
+    val accent = category.colorType.accentColor()
 
-    WorryStepLayout {
-        DetailHeader(
-            icon = icon,
-            color = color,
-            bgColor = bgColor,
-            title = category.title
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        WorryHeader(
-            title = "조금 더 구체적으로\n알려주세요",
-            subtitle = null
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        DetailList(
-            details = category.details,
-            onSelectDetail = onSelectDetail,
-            modifier = Modifier.verticalScroll(rememberScrollState())
-        )
-    }
-}
-
-@Composable
-private fun DetailHeader(
-    icon: ImageVector,
-    color: Color,
-    bgColor: Color,
-    title: String
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(bgColor)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = color
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = color
-        )
-    }
-}
+        Surface(
+            color = accent.copy(alpha = 0.16f),
+            shape = RoundedCornerShape(999.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = category.iconType.toIcon(),
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = category.title,
+                    color = accent,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
 
-@Composable
-private fun DetailList(
-    details: List<com.graceon.domain.model.DetailWorry>,
-    onSelectDetail: (com.graceon.domain.model.DetailWorry) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        details.forEach { detail ->
-            Card(
-                onClick = { onSelectDetail(detail) },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        StepHeader(
+            title = "조금 더 구체적으로\n알려주세요",
+            subtitle = "지금 마음에 가장 가까운 고민을 골라주세요."
+        )
+
+        category.details.forEach { detail ->
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 6.dp)
+                    .clickable { onSelectDetail(detail) },
+                color = GlassSurfaceStrong,
+                shape = RoundedCornerShape(22.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 18.dp, vertical = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = detail.title,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "선택하면 다음 단계로 이동해요",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                    Column(modifier = Modifier.fillMaxWidth(0.88f)) {
+                        Text(
+                            text = detail.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "선택하면 바로 말씀을 찾기 시작합니다.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline
+                        tint = Primary
                     )
                 }
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
 @Composable
 private fun CustomInputStep(
     customWorry: String,
+    isAiMode: Boolean,
     onWorryChange: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
-    WorryStepLayout {
-        CustomInputHeader()
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        WorryHeader(
-            title = "당신의 마음을\n들려주세요",
-            subtitle = "구체적으로 적을수록 더 꼭 맞는 말씀이 나와요"
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        CustomInputForm(
-            customWorry = customWorry,
-            onWorryChange = onWorryChange,
-            onConfirm = onConfirm
-        )
-    }
-}
-
-@Composable
-private fun CustomInputHeader() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = Icons.Outlined.MailOutline,
-            contentDescription = null,
-            modifier = Modifier.size(22.dp),
-            tint = MaterialTheme.colorScheme.secondary
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "AI에게 고민 나누기",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.secondary
-        )
-    }
-}
-
-@Composable
-private fun ColumnScope.CustomInputForm(
-    customWorry: String,
-    onWorryChange: (String) -> Unit,
-    onConfirm: () -> Unit
-) {
-    OutlinedTextField(
-        value = customWorry,
-        onValueChange = onWorryChange,
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f),
-        placeholder = {
-            Text(
-                text = "예: 요즘 취업 준비로 너무 불안하고 자존감이 낮아지는 것 같아...",
-                color = MaterialTheme.colorScheme.outline
-            )
-        },
-        shape = RoundedCornerShape(18.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-        ),
-        textStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp)
-    )
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    Button(
-        onClick = onConfirm,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        enabled = customWorry.isNotBlank(),
-        shape = RoundedCornerShape(18.dp)
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Outlined.Send,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp)
+        if (isAiMode) {
+            Surface(
+                color = GlassSurfaceStrong,
+                shape = RoundedCornerShape(999.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "AI 고민 나누기",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        StepHeader(
+            title = "조금 더 자세히\n이야기해 주실래요?",
+            subtitle = "적어주신 내용을 바탕으로 더 꼭 맞는 말씀을 준비합니다."
         )
-        Spacer(modifier = Modifier.width(8.dp))
+
+        TextField(
+            value = customWorry,
+            onValueChange = onWorryChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp),
+            placeholder = {
+                Text(
+                    text = "어떤 일로 마음이 힘드신가요? 여기에 편하게 적어주세요.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            shape = RoundedCornerShape(28.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = GlassSurfaceStrong,
+                unfocusedContainerColor = GlassSurfaceStrong,
+                disabledContainerColor = GlassSurfaceStrong,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = Primary,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(lineHeight = 25.sp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${customWorry.length} / 500",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "선택 사항",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(58.dp),
+            shape = RoundedCornerShape(999.dp),
+            enabled = customWorry.isNotBlank(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.Black,
+                disabledContainerColor = Color.White.copy(alpha = 0.12f),
+                disabledContentColor = Color.White.copy(alpha = 0.40f)
+            )
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Send,
+                contentDescription = null
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text("말씀 뽑으러 가기", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun StepHeader(
+    title: String,
+    subtitle: String
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "말씀 받으러 가기",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            text = title,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            lineHeight = 38.sp
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            lineHeight = 24.sp
         )
     }
 }
 
-// Helper Extensions
-private fun IconType.toIcon(): ImageVector = when (this) {
-    IconType.BRIEFCASE -> Icons.Outlined.Create
-    IconType.USER -> Icons.Outlined.Person
-    IconType.SUN -> Icons.Outlined.WbSunny
-    IconType.HEART -> Icons.Outlined.Favorite
+private fun WorryContract.State.Step.titleOrNull(selectedCategory: Category?): String? = when (this) {
+    WorryContract.State.Step.Intro -> null
+    WorryContract.State.Step.CategorySelection -> "말씀 찾기"
+    WorryContract.State.Step.DetailSelection -> selectedCategory?.title ?: "세부 고민"
+    WorryContract.State.Step.CustomInput -> "AI에게 고민 나누기"
 }
 
-private fun ColorType.toCategoryColors(): Pair<Color, Color> = when (this) {
-    ColorType.BLUE -> CategoryBlue to CategoryBlueBg
-    ColorType.PINK -> CategoryPink to CategoryPinkBg
-    ColorType.YELLOW -> CategoryAmber to CategoryAmberBg
-    ColorType.PURPLE -> CategoryPurple to CategoryPurpleBg
+private fun IconType.toIcon(): ImageVector = when (this) {
+    IconType.BRIEFCASE -> Icons.Outlined.WorkOutline
+    IconType.USER -> Icons.Default.PersonOutline
+    IconType.SUN -> Icons.Default.WbSunny
+    IconType.HEART -> Icons.Default.FavoriteBorder
+}
+
+private fun ColorType.accentColor(): Color = when (this) {
+    ColorType.BLUE -> Color(0xFF38BDF8)
+    ColorType.PINK -> Color(0xFFFB7185)
+    ColorType.YELLOW -> Color(0xFFFBBF24)
+    ColorType.PURPLE -> Color(0xFFA78BFA)
 }

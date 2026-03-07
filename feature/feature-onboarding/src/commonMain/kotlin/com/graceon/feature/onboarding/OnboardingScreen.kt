@@ -1,325 +1,287 @@
 package com.graceon.feature.onboarding
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.graceon.core.ui.theme.*
-import kotlinx.coroutines.launch
+import com.graceon.core.ui.component.GraceOnAmbientBackground
+import com.graceon.core.ui.theme.GlassBorder
+import com.graceon.core.ui.theme.GlassSurfaceStrong
+import com.graceon.core.ui.theme.Primary
+import com.graceon.core.ui.theme.Secondary
 
-data class OnboardingPage(
-    val emoji: String,
+private const val ONBOARDING_HERO_IMAGE =
+    "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?q=80&w=1200&auto=format&fit=crop"
+
+private data class OnboardingFeature(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val title: String,
-    val description: String,
-    val gradientColors: List<Color>
+    val description: String
 )
 
-private val onboardingPages = listOf(
-    OnboardingPage(
-        emoji = "💊",
-        title = "힐링 말씀에\n오신 것을 환영합니다",
-        description = "마음이 지칠 때, 위로가 필요할 때\nAI가 당신에게 꼭 맞는 말씀을 말씀해드려요",
-        gradientColors = listOf(PrimaryDark, Primary, Secondary)
+private val onboardingFeatures = listOf(
+    OnboardingFeature(
+        icon = Icons.Default.AutoAwesome,
+        title = "맞춤형 위로",
+        description = "지금 감정에 맞는 말씀과 한마디를 정리해서 전합니다."
     ),
-    OnboardingPage(
-        emoji = "🎰",
-        title = "고민을 선택하고\n말씀을 뽑아보세요",
-        description = "가챠 뽑기처럼 재미있게!\n당신의 고민에 맞는 성경 말씀이 나와요",
-        gradientColors = listOf(Primary, Secondary, SecondaryLight)
+    OnboardingFeature(
+        icon = Icons.Default.FavoriteBorder,
+        title = "기도문 생성",
+        description = "말씀을 본 뒤 바로 기도문으로 이어지는 흐름을 제공합니다."
     ),
-    OnboardingPage(
-        emoji = "✨",
-        title = "AI가 분석하여\n맞춤 말씀을 드려요",
-        description = "단순한 말씀 검색이 아닌\n당신의 상황에 맞는 깊은 위로를 전해드려요",
-        gradientColors = listOf(SecondaryDark, Secondary, Tertiary)
-    ),
-    OnboardingPage(
-        emoji = "🤍",
-        title = "저장하고\n언제든 다시 보세요",
-        description = "마음에 드는 말씀은 저장하고\n힘들 때마다 꺼내보세요",
-        gradientColors = listOf(Primary, Tertiary, TertiaryLight)
+    OnboardingFeature(
+        icon = Icons.Default.BookmarkBorder,
+        title = "보관함",
+        description = "마음에 남는 말씀을 저장하고 다시 꺼내볼 수 있습니다."
     )
 )
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(
     onComplete: () -> Unit
 ) {
-    val pagerState = rememberPagerState(pageCount = { onboardingPages.size })
-    val coroutineScope = rememberCoroutineScope()
-    val isLastPage = pagerState.currentPage == onboardingPages.size - 1
-    val currentPage = onboardingPages[pagerState.currentPage]
+    Box(modifier = Modifier.fillMaxSize()) {
+        GraceOnAmbientBackground()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = currentPage.gradientColors
-                )
-            )
-    ) {
+        NetworkHeroImage(
+            url = ONBOARDING_HERO_IMAGE,
+            contentDescription = "새벽 숲길",
+            modifier = Modifier.fillMaxSize()
+        )
+
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp)
+                .fillMaxSize()
                 .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.22f), Color.Transparent)
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0x3305070A),
+                            Color(0xAA05070A),
+                            Color(0xFF05070A)
+                        )
                     )
                 )
         )
 
-        Column(
-            modifier = Modifier.fillMaxSize()
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Skip Button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                if (!isLastPage) {
-                    TextButton(
-                        onClick = onComplete,
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                    ) {
-                        Text(
-                            text = "건너뛰기",
-                            color = Color.White.copy(alpha = 0.92f),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+            item {
+                TopLoginBar()
             }
-
-            // Pager
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) { page ->
-                OnboardingPageContent(
-                    page = onboardingPages[page],
-                    isCurrentPage = pagerState.currentPage == page
-                )
+            item {
+                Spacer(modifier = Modifier.height(160.dp))
+                HeroContent(onComplete = onComplete)
             }
-
-            // Bottom Section
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = Color.White.copy(alpha = 0.12f),
-                        shape = AbsoluteRoundedCornerShape(topLeft = 28.dp, topRight = 28.dp)
-                    )
-                    .padding(horizontal = 24.dp, vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(999.dp),
-                    color = Color.White.copy(alpha = 0.18f)
-                ) {
-                    Text(
-                        text = "${pagerState.currentPage + 1} / ${onboardingPages.size}",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Page Indicators
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(bottom = 32.dp)
-                ) {
-                    repeat(onboardingPages.size) { index ->
-                        val isSelected = pagerState.currentPage == index
-                        val width by animateDpAsState(
-                            targetValue = if (isSelected) 24.dp else 8.dp,
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                            label = "indicator_width"
-                        )
-                        Box(
-                            modifier = Modifier
-                                .height(8.dp)
-                                .width(width)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isSelected) Color.White
-                                    else Color.White.copy(alpha = 0.4f)
-                                )
-                        )
-                    }
-                }
-
-                // Action Button
-                Button(
-                    onClick = {
-                        if (isLastPage) {
-                            onComplete()
-                        } else {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = currentPage.gradientColors.first()
-                    )
-                ) {
-                    Text(
-                        text = if (isLastPage) "시작하기" else "다음",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = if (isLastPage) Icons.Default.Check else Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null
-                    )
-                }
+            items(onboardingFeatures) { feature ->
+                FeatureCard(feature)
             }
         }
     }
 }
 
 @Composable
-private fun OnboardingPageContent(
-    page: OnboardingPage,
-    isCurrentPage: Boolean
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isCurrentPage) 1f else 0.8f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
-    )
-    val alpha by animateFloatAsState(
-        targetValue = if (isCurrentPage) 1f else 0.5f,
-        label = "alpha"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp)
-            .scale(scale)
-            .alpha(alpha),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+private fun TopLoginBar() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End
     ) {
         Surface(
-            shape = RoundedCornerShape(32.dp),
-            color = Color.White.copy(alpha = 0.14f),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f))
+            color = GlassSurfaceStrong,
+            shape = RoundedCornerShape(999.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
         ) {
-            Box(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Grace Note",
+                    text = "로그인",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
+                    color = Color.White.copy(alpha = 0.86f)
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Login,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Primary
                 )
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(28.dp))
-
-        Box(contentAlignment = Alignment.Center) {
-            Box(
-                modifier = Modifier
-                    .size(160.dp)
-                    .background(
-                        color = Color.White.copy(alpha = 0.2f),
-                        shape = CircleShape
-                    )
-            )
+@Composable
+private fun HeroContent(
+    onComplete: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            color = Color.White.copy(alpha = 0.10f),
+            shape = RoundedCornerShape(999.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.18f))
+        ) {
             Text(
-                text = page.emoji,
-                fontSize = 80.sp
+                text = "GraceOn",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold
             )
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
         Text(
-            text = page.title,
-            style = MaterialTheme.typography.headlineMedium,
+            text = "마음에 닿는\n단 하나의 위로",
+            style = MaterialTheme.typography.displayLarge,
             fontWeight = FontWeight.Bold,
             color = Color.White,
             textAlign = TextAlign.Center,
-            lineHeight = 36.sp
+            lineHeight = 44.sp
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = page.description,
+            text = "GraceOn이 당신의 감정을 헤아려\n가장 필요한 말씀을 전해드립니다.",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.9f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(34.dp))
 
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = Color.White.copy(alpha = 0.12f)
+        Button(
+            onClick = onComplete,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(58.dp),
+            shape = RoundedCornerShape(999.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.Black
+            )
         ) {
             Text(
-                text = when (page.title) {
-                    "힐링 말씀에\n오신 것을 환영합니다" -> "지친 마음을 위한 작은 쉼표"
-                    "고민을 선택하고\n말씀을 뽑아보세요" -> "카테고리 선택부터 결과 확인까지 빠르게"
-                    "AI가 분석하여\n맞춤 말씀을 드려요" -> "지금 상황에 맞는 위로를 더 정확하게"
-                    else -> "마음에 남는 말씀은 언제든 다시 보기"
-                },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
-                textAlign = TextAlign.Center
+                text = "시작하기",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(999.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color.White.copy(alpha = 0.88f)
+            )
+        ) {
+            Text(
+                text = "로그인",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Text(
+            text = "시작함으로써 이용약관 및 개인정보처리방침에 동의하게 됩니다.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Secondary,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun FeatureCard(feature: OnboardingFeature) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassSurfaceStrong,
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Primary.copy(alpha = 0.14f), RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = feature.icon,
+                    contentDescription = null,
+                    tint = Primary
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = feature.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = feature.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+            }
         }
     }
 }

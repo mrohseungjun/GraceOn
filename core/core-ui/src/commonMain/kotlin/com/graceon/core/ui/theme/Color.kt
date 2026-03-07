@@ -4,21 +4,21 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 // ============================================
-// Primary Brand Colors - Teal/Cyan 기반 모던 팔레트
+// Primary Brand Colors - Dark glass palette
 // ============================================
-val Primary = Color(0xFF0D9488)           // Teal 600 - 메인 브랜드 컬러
-val PrimaryLight = Color(0xFF14B8A6)      // Teal 500
-val PrimaryDark = Color(0xFF0F766E)       // Teal 700
-val PrimaryContainer = Color(0xFFCCFBF1)  // Teal 100
+val Primary = Color(0xFF13C8EC)
+val PrimaryLight = Color(0xFF6EE5FF)
+val PrimaryDark = Color(0xFF0C8FAA)
+val PrimaryContainer = Color(0xFF0D1B24)
 
-val Secondary = Color(0xFF0EA5E9)         // Sky 500 - 보조 컬러
-val SecondaryLight = Color(0xFF38BDF8)    // Sky 400
-val SecondaryDark = Color(0xFF0284C7)     // Sky 600
-val SecondaryContainer = Color(0xFFE0F2FE) // Sky 100
+val Secondary = Color(0xFF8EA0B7)
+val SecondaryLight = Color(0xFFB8C6D9)
+val SecondaryDark = Color(0xFF0B1017)
+val SecondaryContainer = Color(0xFF131B27)
 
-val Tertiary = Color(0xFFF59E0B)          // Amber 500 - 강조 컬러
-val TertiaryLight = Color(0xFFFBBF24)     // Amber 400
-val TertiaryContainer = Color(0xFFFEF3C7) // Amber 100
+val Tertiary = Color(0xFFA3E635)
+val TertiaryLight = Color(0xFFD9F99D)
+val TertiaryContainer = Color(0xFF1C2615)
 
 // Legacy aliases (기존 코드 호환용)
 val IndigoPrimary = Primary
@@ -56,37 +56,40 @@ val CategoryPurpleBg = Color(0xFFEDE9FE)
 val PurpleGradientStart = Color(0xFFA78BFA)
 val PurpleGradientEnd = Color(0xFF8B5CF6)
 
-// Teal (추가)
-val TealGradientStart = Color(0xFF5EEAD4)
-val TealGradientEnd = Color(0xFF14B8A6)
+// Cyan gradient helpers
+val TealGradientStart = Color(0xFF67E8F9)
+val TealGradientEnd = Color(0xFF13C8EC)
 
 // ============================================
 // Background & Surface
 // ============================================
-val BackgroundLight = Color(0xFFF8FAFC)   // Slate 50
-val BackgroundDark = Color(0xFF0F172A)    // Slate 900
-val SurfaceLight = Color(0xFFFFFFFF)
-val SurfaceDark = Color(0xFF1E293B)       // Slate 800
+val BackgroundLight = Color(0xFF05070A)
+val BackgroundDark = Color(0xFF05070A)
+val SurfaceLight = Color(0xFF0B1017)
+val SurfaceDark = Color(0xFF0B1017)
 
 // Card Colors
-val CardLight = Color(0xFFFFFFFF)
-val CardDark = Color(0xFF1E293B)
-val CardElevated = Color(0xFFF1F5F9)      // Slate 100
+val CardLight = Color(0xFF111827)
+val CardDark = Color(0xFF111827)
+val CardElevated = Color(0xFF121923)
 
 // ============================================
 // Text Colors
 // ============================================
-val TextPrimary = Color(0xFF0F172A)       // Slate 900
-val TextSecondary = Color(0xFF475569)     // Slate 600
-val TextTertiary = Color(0xFF94A3B8)      // Slate 400
-val TextOnDark = Color(0xFFF8FAFC)        // Slate 50
+val TextPrimary = Color(0xFFF8FAFC)
+val TextSecondary = Color(0xFF94A3B8)
+val TextTertiary = Color(0xFF64748B)
+val TextOnDark = Color(0xFFF8FAFC)
 val TextOnPrimary = Color.White
 
 // ============================================
 // Glassmorphism & Effects
 // ============================================
-val GlassWhite = Color(0x80FFFFFF)
-val GlassBlack = Color(0x40000000)
+val GlassWhite = Color(0x12FFFFFF)
+val GlassBlack = Color(0x66000000)
+val GlassSurface = Color(0x0FFFFFFF)
+val GlassSurfaceStrong = Color(0x16FFFFFF)
+val GlassBorder = Color(0x18FFFFFF)
 val Scrim = Color(0x52000000)
 
 // ============================================

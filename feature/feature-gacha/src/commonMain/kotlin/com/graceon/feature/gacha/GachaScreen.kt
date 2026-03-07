@@ -1,34 +1,52 @@
 package com.graceon.feature.gacha
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-
+import androidx.compose.ui.unit.sp
+import com.graceon.core.ui.component.GraceOnAmbientBackground
 import com.graceon.core.ui.component.GraceOnScaffold
-import com.graceon.core.ui.theme.*
+import com.graceon.core.ui.theme.GlassBorder
+import com.graceon.core.ui.theme.GlassSurfaceStrong
+import com.graceon.core.ui.theme.Primary
 import com.graceon.domain.model.Prescription
 
 @Composable
@@ -52,486 +70,288 @@ fun GachaScreen(
                         effect.isAiMode
                     )
                 }
-                is GachaContract.Effect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message)
-                }
+                is GachaContract.Effect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
 
     GraceOnScaffold(
-        title = "말씀 뽑기",
+        title = null,
         onNavigateBack = onNavigateBack,
         snackbarHostState = snackbarHostState,
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
-                Color(0xFFEEF2FF),
-                Color(0xFFE0E7FF)
+                MaterialTheme.colorScheme.background,
+                Color(0xFF07131E)
             )
-        )
+        ),
+        topBarContainerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.Transparent),
-            contentAlignment = Alignment.Center
         ) {
-            // Animated Background Particles
-            BackgroundParticles()
+            GraceOnAmbientBackground()
 
             Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(24.dp)
+                verticalArrangement = Arrangement.Center
             ) {
-                // Title Area
-                GachaHeader(state.stage)
-                
-                Spacer(modifier = Modifier.height(40.dp))
+                LoadingArtwork(stage = state.stage)
 
-                // Machine Area
-                GachaMachine(
-                    stage = state.stage,
-                    onPull = { viewModel.handleIntent(GachaContract.Intent.PullLever) }
-                )
-            }
+                Spacer(modifier = Modifier.height(28.dp))
 
-            // Opening Effect Overlay
-            OpeningEffect(visible = state.stage == GachaContract.State.Stage.Opening)
-        }
-    }
-}
-
-@Composable
-private fun BackgroundParticles() {
-    val infiniteTransition = rememberInfiniteTransition(label = "background_particles")
-    
-    repeat(5) { index ->
-        val offsetY by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = -100f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(3000 + index * 1000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "particle_y_$index"
-        )
-        
-        val alpha by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = keyframes {
-                    durationMillis = 3000 + index * 1000
-                    0f at 0
-                    0.5f at 1500
-                    0f at 3000
-                },
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "particle_alpha_$index"
-        )
-
-        Box(
-            modifier = Modifier
-                .offset(
-                    x = ((index * 70) - 140).dp,
-                    y = offsetY.dp
-                )
-                .size(10.dp)
-                .background(
-                    color = if (index % 2 == 0) IndigoPrimary.copy(alpha = alpha * 0.3f) 
-                           else PurplePrimary.copy(alpha = alpha * 0.3f),
-                    shape = CircleShape
-                )
-        )
-    }
-}
-
-@Composable
-private fun GachaHeader(stage: GachaContract.State.Stage) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "힐링 말씀",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = IndigoPrimary,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        
-        AnimatedContent(
-            targetState = stage,
-            transitionSpec = {
-                 fadeIn(animationSpec = tween(300)) + slideInVertically { 20 } togetherWith
-                        fadeOut(animationSpec = tween(300)) + slideOutVertically { -20 }
-            },
-            label = "header_text"
-        ) { targetStage ->
-              Text(
-                text = when (targetStage) {
-                    GachaContract.State.Stage.Idle -> "마음을 담아 레버를 돌려주세요"
-                    GachaContract.State.Stage.Shaking -> "당신을 위한 말씀을 찾고 있어요..."
-                    GachaContract.State.Stage.Dispensing -> "말씀이 나오고 있어요!"
-                    GachaContract.State.Stage.Opening -> "말씀을 확인하세요"
-                    GachaContract.State.Stage.Complete -> "완료!"
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                color = TextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-}
-
-@Composable
-private fun GachaMachine(
-    stage: GachaContract.State.Stage,
-    onPull: () -> Unit
-) {
-    val capsuleColors = remember {
-        listOf(
-            Color(0xFFEF4444),
-            Color(0xFF3B82F6),
-            Color(0xFFFBBF24),
-            Color(0xFF10B981),
-            Color(0xFF8B5CF6)
-        )
-    }
-    val selectedCapsuleColor = remember { capsuleColors.random() }
-
-    Card(
-        modifier = Modifier
-            .width(320.dp),
-        shape = RoundedCornerShape(32.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
-        ) {
-            Box(
-                contentAlignment = Alignment.TopCenter
-            ) {
-                // Machine Body
-                MachineBody()
-                
-                // Content (Capsules)
-                Box(
-                    modifier = Modifier
-                        .padding(top = 16.dp)
-                        .size(240.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Shaking Capsules
-                    if (stage != GachaContract.State.Stage.Dispensing && 
-                        stage != GachaContract.State.Stage.Opening && 
-                        stage != GachaContract.State.Stage.Complete) {
-                        
-                        val shakeOffset by animateFloatAsState(
-                            targetValue = if (stage == GachaContract.State.Stage.Shaking) 1f else 0f,
-                            animationSpec = if (stage == GachaContract.State.Stage.Shaking) {
-                                infiniteRepeatable(
-                                    animation = tween(100),
-                                    repeatMode = RepeatMode.Reverse
-                                )
-                            } else tween(0),
-                            label = "shake"
+                AnimatedContent(
+                    targetState = state.stage,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "gacha_stage"
+                ) { stage ->
+                    val copy = stageCopy(stage)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = copy.title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 34.sp
                         )
+                        Text(
+                            text = copy.description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 24.sp
+                        )
+                    }
+                }
 
-                        Box(
-                            modifier = Modifier
-                                .offset(x = (shakeOffset * 5).dp, y = (shakeOffset * 5).dp)
-                        ) {
-                            repeat(5) { index ->
-                                Capsule(
-                                    color = capsuleColors[index],
-                                    modifier = Modifier.offset(
-                                        x = (index * 30 - 60).dp,
-                                        y = (index % 2 * 40 - 20).dp
-                                    )
-                                )
-                            }
-                        }
+                Spacer(modifier = Modifier.height(26.dp))
+
+                ProgressPanel(progress = state.stage.progress())
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TipPanel(
+                    message = when (state.stage) {
+                        GachaContract.State.Stage.Idle -> "버튼을 누르면 당신의 고민과 감정에 맞는 말씀을 찾기 시작합니다."
+                        GachaContract.State.Stage.Shaking -> "감정 맥락과 성경 구절을 함께 정리하고 있습니다."
+                        GachaContract.State.Stage.Dispensing -> "말씀 카드와 위로의 한마디를 다듬고 있습니다."
+                        GachaContract.State.Stage.Opening -> "거의 준비되었습니다. 잠시만 기다려주세요."
+                        GachaContract.State.Stage.Complete -> "완료되면 결과 화면으로 자동 이동합니다."
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                Button(
+                    onClick = { viewModel.handleIntent(GachaContract.Intent.PullLever) },
+                    enabled = state.stage == GachaContract.State.Stage.Idle,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(58.dp),
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black,
+                        disabledContainerColor = Color.White.copy(alpha = 0.12f),
+                        disabledContentColor = Color.White.copy(alpha = 0.40f)
+                    )
+                ) {
+                    if (state.stage == GachaContract.State.Stage.Idle) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text("말씀 뽑기 시작", fontWeight = FontWeight.Bold)
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.Black
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text("말씀을 준비하는 중", fontWeight = FontWeight.Bold)
                     }
                 }
             }
+        }
+    }
+}
 
-            // Dropped Capsule
-            Box(
-                modifier = Modifier
-                    .height(80.dp)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = stage == GachaContract.State.Stage.Dispensing || stage == GachaContract.State.Stage.Opening,
-                    enter = slideInVertically { -100 } + fadeIn(),
-                    exit = scaleOut() + fadeOut()
-                ) {
-                    Capsule(
-                        color = selectedCapsuleColor,
-                        modifier = Modifier.scale(1.2f)
+@Composable
+private fun LoadingArtwork(stage: GachaContract.State.Stage) {
+    Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(220.dp)
+                .alpha(0.8f)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Primary.copy(alpha = 0.28f),
+                            Color.Transparent
+                        )
+                    ),
+                    RoundedCornerShape(999.dp)
+                )
+        )
+
+        Surface(
+            modifier = Modifier.size(124.dp),
+            color = GlassSurfaceStrong,
+            shape = RoundedCornerShape(999.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                if (stage == GachaContract.State.Stage.Idle) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(38.dp)
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(40.dp),
+                        strokeWidth = 3.dp,
+                        color = Primary
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Lever Button
-            LeverButton(
-                isIdle = stage == GachaContract.State.Stage.Idle,
-                isShaking = stage == GachaContract.State.Stage.Shaking,
-                onPull = onPull
-            )
         }
     }
 }
 
 @Composable
-private fun MachineBody() {
-    Box(
-        modifier = Modifier
-            .width(280.dp)
-            .height(360.dp)
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFFFAFAFA), Color(0xFFE0E0E0))
-                ),
-                shape = RoundedCornerShape(topStart = 140.dp, topEnd = 140.dp, bottomStart = 32.dp, bottomEnd = 32.dp)
-            )
-            .border(
-                width = 4.dp,
-                brush = Brush.linearGradient(
-                    colors = listOf(Color(0xFFFFFFFF), Color(0xFFBDBDBD))
-                ),
-                shape = RoundedCornerShape(topStart = 140.dp, topEnd = 140.dp, bottomStart = 32.dp, bottomEnd = 32.dp)
-            )
+private fun ProgressPanel(progress: Float) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassSurfaceStrong,
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
     ) {
-        // Glass Dome Background with Shine
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 16.dp)
-                .size(240.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFFE0F2FE).copy(alpha = 0.4f),
-                            Color(0xFFDBEAFE).copy(alpha = 0.1f)
-                        )
-                    ),
-                    shape = CircleShape
-                )
-                .border(
-                    width = 6.dp,
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.2f))
-                    ),
-                    shape = CircleShape
-                )
-        ) {
-            // Shine effect
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .offset(x = 40.dp, y = 40.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(Color.White.copy(alpha = 0.8f), Color.Transparent)
-                        ),
-                        shape = CircleShape
-                    )
-            )
-        }
-
-        // Base
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(110.dp)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            IndigoPrimary,
-                            IndigoSecondary
-                        )
-                    ),
-                    shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            // Metallic trim
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF94A3B8),
-                                Color(0xFFE2E8F0),
-                                Color(0xFF94A3B8)
-                            )
-                        )
-                    )
-            )
-
-            // Dispenser Hole
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(Color(0xFF374151), Color(0xFF111827))
-                        ),
-                        shape = CircleShape
-                    )
-                    .border(
-                        width = 4.dp,
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color(0xFF6B7280), Color(0xFF374151))
-                        ),
-                        shape = CircleShape
-                    )
-            ) {
-                // Hole depth
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(56.dp)
-                        .background(Color.Black.copy(alpha = 0.7f), CircleShape)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun Capsule(
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .size(40.dp)
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(color, color.copy(alpha = 0.8f))
-                ),
-                shape = CircleShape
-            )
-            .border(
-                width = 1.dp,
-                color = Color.White.copy(alpha = 0.3f),
-                shape = CircleShape
-            )
-    ) {
-        // Upper Highlight
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(x = 8.dp, y = 8.dp)
-                .size(12.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.8f), Color.Transparent)
-                    ),
-                    shape = CircleShape
-                )
-        )
-
-        // Split Line (Metallic)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .align(Alignment.Center)
-                .background(Color.White.copy(alpha = 0.2f))
-        )
-    }
-}
-
-@Composable
-private fun LeverButton(
-    isIdle: Boolean,
-    isShaking: Boolean,
-    onPull: () -> Unit
-) {
-    val rotation by animateFloatAsState(
-        targetValue = if (isShaking) 90f else 0f,
-        animationSpec = tween(500),
-        label = "lever_rotation"
-    )
-
-    Button(
-        onClick = onPull,
-        enabled = isIdle,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp),
-        shape = RoundedCornerShape(32.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent
-        ),
-        contentPadding = PaddingValues(0.dp),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 4.dp
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = if (isIdle) {
-                        Brush.horizontalGradient(colors = listOf(IndigoPrimary, PurplePrimary))
-                    } else {
-                        Brush.horizontalGradient(colors = listOf(Color.Gray, Color.Gray))
-                    },
-                    shape = RoundedCornerShape(32.dp)
-                ),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .rotate(rotation)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = if (isShaking) "말씀을 찾는 중..." else "고민 넣고 뽑기",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "은혜를 불러오는 중...",
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(999.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .height(10.dp)
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(Primary, Color(0xFF60A5FA))
+                            ),
+                            RoundedCornerShape(999.dp)
+                        )
+                )
             }
         }
     }
 }
 
 @Composable
-private fun OpeningEffect(visible: Boolean) {
-    androidx.compose.animation.AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(tween(500)),
-        exit = fadeOut(tween(500))
+private fun TipPanel(message: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassSurfaceStrong,
+        shape = RoundedCornerShape(22.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White.copy(alpha = 0.9f))
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoAwesome,
+                contentDescription = null,
+                tint = Primary,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "오늘의 팁",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+            }
+        }
     }
+}
+
+private data class StageCopy(
+    val title: String,
+    val description: String
+)
+
+private fun stageCopy(stage: GachaContract.State.Stage): StageCopy = when (stage) {
+    GachaContract.State.Stage.Idle -> StageCopy(
+        title = "당신을 위한 위로를\n찾을 준비가 됐어요",
+        description = "버튼을 누르면 마음에 꼭 맞는 말씀 카드 생성을 시작합니다."
+    )
+    GachaContract.State.Stage.Shaking -> StageCopy(
+        title = "감정과 상황을\n정리하고 있어요",
+        description = "지금 느끼는 무게와 가장 어울리는 성경 구절을 찾고 있습니다."
+    )
+    GachaContract.State.Stage.Dispensing -> StageCopy(
+        title = "말씀을 카드 형태로\n다듬고 있어요",
+        description = "조금만 기다리면 결과 화면으로 이어집니다."
+    )
+    GachaContract.State.Stage.Opening -> StageCopy(
+        title = "거의 다 왔습니다",
+        description = "AI의 한마디와 함께 말씀을 정리하는 마지막 단계입니다."
+    )
+    GachaContract.State.Stage.Complete -> StageCopy(
+        title = "준비 완료",
+        description = "잠시 후 결과 화면으로 이동합니다."
+    )
+}
+
+private fun GachaContract.State.Stage.progress(): Float = when (this) {
+    GachaContract.State.Stage.Idle -> 0.12f
+    GachaContract.State.Stage.Shaking -> 0.42f
+    GachaContract.State.Stage.Dispensing -> 0.72f
+    GachaContract.State.Stage.Opening -> 0.92f
+    GachaContract.State.Stage.Complete -> 1f
 }

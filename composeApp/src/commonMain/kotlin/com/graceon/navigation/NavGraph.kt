@@ -167,6 +167,7 @@ internal fun NavGraph(
             ResultScreen(
                 viewModel = viewModel,
                 onNavigateBack = ::popBackStack,
+                onNavigateToSaved = { navigate(NavEntry.Saved) },
                 onShareText = onShareText,
                 onShareImage = onShareImage,
                 onNavigateHome = ::popToWorry
@@ -176,7 +177,8 @@ internal fun NavGraph(
         NavEntry.Saved -> {
             SavedScreen(
                 viewModel = savedViewModel,
-                onNavigateBack = ::popBackStack
+                onNavigateBack = ::popBackStack,
+                onNavigateHome = { replaceRoot(NavEntry.Worry) }
             )
         }
     }

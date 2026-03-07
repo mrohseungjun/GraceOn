@@ -20,6 +20,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +31,7 @@ fun GraceOnScaffold(
     snackbarHostState: SnackbarHostState? = null,
     backgroundBrush: Brush? = null,
     centerAlignedTopBar: Boolean = true,
+    topBarContainerColor: Color = Color.Transparent,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit
 ) {
@@ -63,7 +65,10 @@ fun GraceOnScaffold(
                         },
                         actions = actions,
                         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.background
+                            containerColor = topBarContainerColor,
+                            titleContentColor = MaterialTheme.colorScheme.onBackground,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                            actionIconContentColor = MaterialTheme.colorScheme.onBackground
                         )
                     )
                 } else {
@@ -81,7 +86,10 @@ fun GraceOnScaffold(
                         },
                         actions = actions,
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.background
+                            containerColor = topBarContainerColor,
+                            titleContentColor = MaterialTheme.colorScheme.onBackground,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                            actionIconContentColor = MaterialTheme.colorScheme.onBackground
                         )
                     )
                 }
