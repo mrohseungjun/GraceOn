@@ -1,7 +1,7 @@
 package com.graceon
 
 import com.graceon.core.common.DefaultDispatcherProvider
-import com.graceon.core.network.GeminiApiClient
+import com.graceon.core.network.GraceOnProxyApiClient
 import com.graceon.data.datastore.OnboardingPreferences
 import com.graceon.data.datastore.NotificationPreferences
 import com.graceon.data.datastore.ThemePreferences
@@ -14,11 +14,11 @@ import com.graceon.domain.usecase.GeneratePrescriptionUseCase
 import com.graceon.domain.usecase.GetSavedPrescriptionsUseCase
 import com.graceon.domain.usecase.SavePrescriptionUseCase
 
-internal fun createGraceOnIosDependencies(apiKey: String): GraceOnDependencies {
+internal fun createGraceOnIosDependencies(apiBaseUrl: String): GraceOnDependencies {
     val dispatcherProvider = DefaultDispatcherProvider()
-    val geminiApiClient = GeminiApiClient(apiKey = apiKey)
+    val proxyApiClient = GraceOnProxyApiClient(baseUrl = apiBaseUrl)
     val prescriptionRepository = PrescriptionRepositoryImpl(
-        geminiApiClient = geminiApiClient,
+        proxyApiClient = proxyApiClient,
         dispatcherProvider = dispatcherProvider
     )
     val savedPrescriptionRepository = SavedPrescriptionRepositoryImpl(

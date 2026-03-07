@@ -3,13 +3,13 @@ package com.graceon
 import androidx.compose.ui.window.ComposeUIViewController
 
 fun MainViewController(
-    apiKey: String,
+    apiBaseUrl: String,
     appVersion: String,
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit
 ) = ComposeUIViewController {
     App(
-        apiKey = apiKey,
+        apiBaseUrl = apiBaseUrl,
         appVersion = appVersion,
         onShareText = onShareText,
         onToggleDailyVerseNotification = onToggleDailyVerseNotification

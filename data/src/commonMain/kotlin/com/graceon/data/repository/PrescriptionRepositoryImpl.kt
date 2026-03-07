@@ -2,7 +2,7 @@ package com.graceon.data.repository
 
 import com.graceon.core.common.DispatcherProvider
 import com.graceon.core.common.Result
-import com.graceon.core.network.GeminiApiClient
+import com.graceon.core.network.GraceOnProxyApiClient
 import com.graceon.domain.model.Prayer
 import com.graceon.domain.model.Prescription
 import com.graceon.domain.model.WorryContext
@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
  * PrescriptionRepository 구현체 (Data Layer)
  */
 class PrescriptionRepositoryImpl(
-    private val geminiApiClient: GeminiApiClient,
+    private val proxyApiClient: GraceOnProxyApiClient,
     private val dispatcherProvider: DispatcherProvider
 ) : PrescriptionRepository {
 
@@ -43,7 +43,7 @@ class PrescriptionRepositoryImpl(
                     }
                 """.trimIndent()
 
-                val responseText = geminiApiClient.generateContent(prompt)
+                val responseText = proxyApiClient.generateContent(prompt)
 
                 // JSON 파싱 (```json 제거)
                 val cleanJson = responseText
@@ -89,7 +89,7 @@ class PrescriptionRepositoryImpl(
                     Task: Write a short, touching prayer (3-4 sentences, Korean) using polite honorifics (하오체/합쇼체 appropriate for prayer) that the user can pray. Start with "하나님 아버지," or similar.
                 """.trimIndent()
 
-                val prayerText = geminiApiClient.generateContent(prompt)
+                val prayerText = proxyApiClient.generateContent(prompt)
                 Result.Success(Prayer(prayerText.trim()))
                 
             } catch (e: Exception) {

@@ -88,8 +88,8 @@ android {
             localProperties.load(FileInputStream(localPropertiesFile))
         }
 
-        val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
-        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        val graceOnApiBaseUrl = localProperties.getProperty("GRACEON_API_BASE_URL") ?: ""
+        buildConfigField("String", "GRACEON_API_BASE_URL", "\"$graceOnApiBaseUrl\"")
     }
 
     buildTypes {

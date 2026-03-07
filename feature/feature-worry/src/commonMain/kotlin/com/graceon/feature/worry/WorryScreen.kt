@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.imePadding
 import com.graceon.core.ui.component.GraceOnAmbientBackground
 import com.graceon.core.ui.component.GraceOnBottomBar
 import com.graceon.core.ui.component.GraceOnBottomTab
@@ -600,9 +601,13 @@ private fun CustomInputStep(
     onWorryChange: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
+            .imePadding()
             .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
@@ -644,6 +649,8 @@ private fun CustomInputStep(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(260.dp),
+            singleLine = false,
+            maxLines = 12,
             placeholder = {
                 Text(
                     text = "어떤 일로 마음이 힘드신가요? 여기에 편하게 적어주세요.",

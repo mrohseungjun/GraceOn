@@ -59,6 +59,10 @@ fun GachaScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(viewModel) {
+        viewModel.handleIntent(GachaContract.Intent.PullLever)
+    }
+
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -111,7 +115,7 @@ fun GachaScreen(
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "gacha_stage"
                 ) { stage ->
-                    val copy = stageCopy(stage)
+                    val copy = stageCopy(stage = stage, hasError = state.error != null)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -141,46 +145,32 @@ fun GachaScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 TipPanel(
-                    message = when (state.stage) {
-                        GachaContract.State.Stage.Idle -> "버튼을 누르면 당신의 고민과 감정에 맞는 말씀을 찾기 시작합니다."
-                        GachaContract.State.Stage.Shaking -> "감정 맥락과 성경 구절을 함께 정리하고 있습니다."
-                        GachaContract.State.Stage.Dispensing -> "말씀 카드와 위로의 한마디를 다듬고 있습니다."
-                        GachaContract.State.Stage.Opening -> "거의 준비되었습니다. 잠시만 기다려주세요."
-                        GachaContract.State.Stage.Complete -> "완료되면 결과 화면으로 자동 이동합니다."
-                    }
+                    message = tipMessage(
+                        stage = state.stage,
+                        hasError = state.error != null
+                    )
                 )
 
-                Spacer(modifier = Modifier.height(28.dp))
+                if (state.error != null && state.stage == GachaContract.State.Stage.Idle) {
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                Button(
-                    onClick = { viewModel.handleIntent(GachaContract.Intent.PullLever) },
-                    enabled = state.stage == GachaContract.State.Stage.Idle,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp),
-                    shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                        disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.55f)
-                    )
-                ) {
-                    if (state.stage == GachaContract.State.Stage.Idle) {
+                    Button(
+                        onClick = { viewModel.handleIntent(GachaContract.Intent.PullLever) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(58.dp),
+                        shape = RoundedCornerShape(999.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.AutoAwesome,
+                            imageVector = Icons.Default.Refresh,
                             contentDescription = null
                         )
                         Spacer(modifier = Modifier.size(8.dp))
-                        Text("말씀 뽑기 시작", fontWeight = FontWeight.Bold)
-                    } else {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text("말씀을 준비하는 중", fontWeight = FontWeight.Bold)
+                        Text("다시 시도", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -326,10 +316,17 @@ private data class StageCopy(
     val description: String
 )
 
-private fun stageCopy(stage: GachaContract.State.Stage): StageCopy = when (stage) {
+private fun stageCopy(
+    stage: GachaContract.State.Stage,
+    hasError: Boolean
+): StageCopy = when (stage) {
     GachaContract.State.Stage.Idle -> StageCopy(
-        title = "당신을 위한 위로를\n찾을 준비가 됐어요",
-        description = "버튼을 누르면 마음에 꼭 맞는 말씀 카드 생성을 시작합니다."
+        title = if (hasError) "잠시 연결이 끊겼습니다" else "당신을 위한 위로를\n찾고 있어요",
+        description = if (hasError) {
+            "네트워크 상태를 확인한 뒤 다시 시도하면 말씀 생성을 이어갈 수 있습니다."
+        } else {
+            "가장 어울리는 말씀과 위로의 한마디를 자동으로 준비하고 있습니다."
+        }
     )
     GachaContract.State.Stage.Shaking -> StageCopy(
         title = "감정과 상황을\n정리하고 있어요",
@@ -349,8 +346,25 @@ private fun stageCopy(stage: GachaContract.State.Stage): StageCopy = when (stage
     )
 }
 
+private fun tipMessage(
+    stage: GachaContract.State.Stage,
+    hasError: Boolean
+): String = when (stage) {
+    GachaContract.State.Stage.Idle -> {
+        if (hasError) {
+            "일시적인 오류일 수 있습니다. 연결이 안정되면 다시 시도해보세요."
+        } else {
+            "화면에 들어오면 바로 말씀 추천이 시작됩니다."
+        }
+    }
+    GachaContract.State.Stage.Shaking -> "감정 맥락과 성경 구절을 함께 정리하고 있습니다."
+    GachaContract.State.Stage.Dispensing -> "말씀 카드와 위로의 한마디를 다듬고 있습니다."
+    GachaContract.State.Stage.Opening -> "거의 준비되었습니다. 잠시만 기다려주세요."
+    GachaContract.State.Stage.Complete -> "완료되면 결과 화면으로 자동 이동합니다."
+}
+
 private fun GachaContract.State.Stage.progress(): Float = when (this) {
-    GachaContract.State.Stage.Idle -> 0.12f
+    GachaContract.State.Stage.Idle -> 0f
     GachaContract.State.Stage.Shaking -> 0.42f
     GachaContract.State.Stage.Dispensing -> 0.72f
     GachaContract.State.Stage.Opening -> 0.92f

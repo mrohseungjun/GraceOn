@@ -4,13 +4,13 @@ import androidx.compose.runtime.Composable
 
 @Composable
 fun App(
-    apiKey: String = "",
+    apiBaseUrl: String = "",
     appVersion: String = "",
     onShareText: (String) -> Unit = {},
     onToggleDailyVerseNotification: (Boolean) -> Unit = {}
 ) {
     PlatformAppContent(
-        apiKey = apiKey,
+        apiBaseUrl = apiBaseUrl,
         appVersion = appVersion,
         onShareText = onShareText,
         onToggleDailyVerseNotification = onToggleDailyVerseNotification
@@ -19,7 +19,7 @@ fun App(
 
 @Composable
 internal expect fun PlatformAppContent(
-    apiKey: String,
+    apiBaseUrl: String,
     appVersion: String,
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit

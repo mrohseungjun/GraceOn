@@ -5,12 +5,12 @@ import androidx.compose.runtime.remember
 
 @Composable
 internal actual fun PlatformAppContent(
-    apiKey: String,
+    apiBaseUrl: String,
     appVersion: String,
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit
 ) {
-    val dependencies = remember(apiKey) { createGraceOnIosDependencies(apiKey = apiKey) }
+    val dependencies = remember(apiBaseUrl) { createGraceOnIosDependencies(apiBaseUrl = apiBaseUrl) }
     GraceOnRoot(
         dependencies = dependencies,
         appVersion = appVersion,

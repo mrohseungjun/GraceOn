@@ -18,7 +18,7 @@ struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let coordinator = context.coordinator
         let viewController = MainViewControllerKt.MainViewController(
-            apiKey: geminiApiKey,
+            apiBaseUrl: graceOnApiBaseUrl,
             appVersion: appVersion,
             onShareText: { text in
                 coordinator.share(text: text)
@@ -34,8 +34,8 @@ struct ComposeView: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 
-    private var geminiApiKey: String {
-        Bundle.main.object(forInfoDictionaryKey: "GEMINI_API_KEY") as? String ?? ""
+    private var graceOnApiBaseUrl: String {
+        Bundle.main.object(forInfoDictionaryKey: "GRACEON_API_BASE_URL") as? String ?? ""
     }
 
     private var appVersion: String {

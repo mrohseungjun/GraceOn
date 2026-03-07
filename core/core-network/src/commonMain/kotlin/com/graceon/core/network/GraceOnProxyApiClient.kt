@@ -7,17 +7,17 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-/**
- * Gemini API Client using Ktor.
- */
-class GeminiApiClient(
-    private val apiKey: String
+class GraceOnProxyApiClient(
+    private val baseUrl: String
 ) {
     private val client = HttpClient(platformHttpClientEngineFactory()) {
         install(ContentNegotiation) {
@@ -42,29 +42,19 @@ class GeminiApiClient(
     }
 
     suspend fun generateContent(prompt: String): String {
-        require(apiKey.isNotBlank()) {
-            "Gemini API key is missing. Configure GEMINI_API_KEY for this platform."
+        require(baseUrl.isNotBlank()) {
+            "GraceOn proxy URL is missing. Configure GRACEON_API_BASE_URL for this platform."
         }
 
-        val response = client.post {
-            url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
-            parameter("key", apiKey)
-            contentType(ContentType.Application.Json)
-            setBody(
-                GeminiRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(Part(text = prompt))
-                        )
-                    )
-                )
-            )
+        val response = client.post(baseUrl) {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(ProxyGenerateRequest(prompt = prompt))
         }
 
-        val geminiResponse: GeminiResponse = response.body()
-        return geminiResponse.candidates.firstOrNull()
-            ?.content?.parts?.firstOrNull()?.text
-            ?: throw Exception("Empty response from Gemini API")
+        val payload: ProxyGenerateResponse = response.body()
+        return payload.text.ifBlank {
+            throw Exception("Empty response from GraceOn proxy")
+        }
     }
 
     fun close() {
@@ -73,26 +63,11 @@ class GeminiApiClient(
 }
 
 @Serializable
-data class GeminiRequest(
-    val contents: List<Content>
+private data class ProxyGenerateRequest(
+    val prompt: String
 )
 
 @Serializable
-data class Content(
-    val parts: List<Part>
-)
-
-@Serializable
-data class Part(
+private data class ProxyGenerateResponse(
     val text: String
-)
-
-@Serializable
-data class GeminiResponse(
-    val candidates: List<Candidate>
-)
-
-@Serializable
-data class Candidate(
-    val content: Content
 )

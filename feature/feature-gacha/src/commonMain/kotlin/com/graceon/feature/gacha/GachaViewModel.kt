@@ -49,7 +49,8 @@ class GachaViewModel(
             // Start shaking animation
             _state.value = _state.value.copy(
                 stage = GachaContract.State.Stage.Shaking,
-                isLoading = true
+                isLoading = true,
+                error = null
             )
 
             // Generate prescription from AI

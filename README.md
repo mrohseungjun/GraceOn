@@ -4,7 +4,7 @@ AI 기반 성경 말씀 말씀 앱 - Kotlin Compose Multiplatform + Clean Archit
 
 ## 프로젝트 개요
 
-사용자의 고민을 듣고 AI(Gemini)가 적절한 성경 말씀과 위로의 메시지, 기도문을 제공하는 Android 앱입니다.
+사용자의 고민을 듣고 AI가 적절한 성경 말씀과 위로의 메시지, 기도문을 제공하는 Kotlin Compose Multiplatform 앱입니다.
 
 ## 아키텍처
 
@@ -55,6 +55,7 @@ build-logic/         # 컨벤션 플러그인
 ### Network & Data
 - **Ktor Client**: HTTP 클라이언트
 - **Kotlinx Serialization**: JSON 직렬화
+- **Supabase Edge Functions**: Gemini 프록시
 - **Gemini API**: AI 말씀 생성
 
 ### DI & Async
@@ -84,15 +85,21 @@ app
 
 ## 시작하기
 
-### 1. API Key 설정
+### 1. 프록시 URL 설정
 
-`local.properties` 파일에 Gemini API Key를 추가하세요:
+앱은 Gemini를 직접 호출하지 않고 Supabase Edge Function을 호출합니다.
 
+Android `local.properties`
 ```properties
-GEMINI_API_KEY=your_api_key_here
+GRACEON_API_BASE_URL=https://<your-project-ref>.supabase.co/functions/v1/generate-gemini-content
 ```
 
-`local.properties`는 개인 환경 설정 파일이므로 저장소에 커밋하지 않는 것을 전제로 합니다.
+iOS `iosApp/Configuration/Config.local.xcconfig`
+```xcconfig
+GRACEON_API_BASE_URL=https://<your-project-ref>.supabase.co/functions/v1/generate-gemini-content
+```
+
+Supabase Edge Function 설정 절차는 `SUPABASE_EDGE_FUNCTIONS_SETUP.md`를 참고하세요.
 
 ### 2. 빌드 및 실행
 
@@ -108,7 +115,7 @@ GEMINI_API_KEY=your_api_key_here
 
 ### 2. 가챠 애니메이션
 - 가챠 머신 애니메이션
-- AI가 말씀을 찾는 동안 로딩 표시
+- 화면 진입 시 자동으로 말씀 생성 시작
 
 ### 3. 말씀 결과
 - 성경 말씀 + 위로 메시지

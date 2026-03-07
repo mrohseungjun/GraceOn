@@ -1,0 +1,2 @@
+[functions.generate-gemini-content]
+verify_jwt = false
