@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -85,10 +86,14 @@ fun GraceOnBottomBar(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier,
-        color = GlassSurfaceStrong,
+        modifier = modifier.shadow(
+            elevation = 24.dp,
+            shape = RoundedCornerShape(999.dp),
+            clip = false
+        ),
+        color = Color(0xFF0D141D).copy(alpha = 0.96f),
         shape = RoundedCornerShape(999.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
     ) {
         Row(
             modifier = Modifier
@@ -136,7 +141,7 @@ private fun BottomBarButton(
                 modifier = Modifier
                     .size(34.dp)
                     .background(
-                        color = if (active) Primary.copy(alpha = 0.18f) else Color.Transparent,
+                        color = if (active) Primary.copy(alpha = 0.22f) else Color.Transparent,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center

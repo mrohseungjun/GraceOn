@@ -2,6 +2,7 @@ package com.graceon.feature.worry
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -21,10 +22,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -184,8 +183,13 @@ private fun AnimatedWorryContent(
     AnimatedContent(
         targetState = state.step,
         transitionSpec = {
-            slideInHorizontally { it / 6 } + fadeIn() togetherWith
-                slideOutHorizontally { -it / 8 } + fadeOut()
+            val forward = targetState.stepIndex() >= initialState.stepIndex()
+            val enterOffset: (Int) -> Int = { fullWidth -> if (forward) fullWidth / 5 else -fullWidth / 5 }
+            val exitOffset: (Int) -> Int = { fullWidth -> if (forward) -fullWidth / 6 else fullWidth / 6 }
+
+            (slideInHorizontally(initialOffsetX = enterOffset) + fadeIn()) togetherWith
+                (slideOutHorizontally(targetOffsetX = exitOffset) + fadeOut()) using
+                SizeTransform(clip = false)
         },
         label = "worry_content"
     ) { step ->
@@ -297,17 +301,10 @@ private fun IntroStep(
         }
 
         item {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.heightIn(min = 260.dp, max = 420.dp),
-                userScrollEnabled = false,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(categories.take(4)) { category ->
-                    IntroCategoryCard(category = category, onClick = { onSelectCategory(category) })
-                }
-            }
+            CategoryCardGrid(
+                categories = categories.take(4),
+                onSelectCategory = onSelectCategory
+            )
         }
 
         item {
@@ -492,15 +489,39 @@ private fun CategorySelectionStep(
             subtitle = "가장 고민이 되는 영역을 선택해주세요."
         )
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier.heightIn(min = 280.dp),
-            userScrollEnabled = false,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(categories) { category ->
-                IntroCategoryCard(category = category, onClick = { onSelectCategory(category) })
+        CategoryCardGrid(
+            categories = categories,
+            onSelectCategory = onSelectCategory
+        )
+    }
+}
+
+@Composable
+private fun CategoryCardGrid(
+    categories: List<Category>,
+    onSelectCategory: (Category) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        categories.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                rowItems.forEach { category ->
+                    Box(modifier = Modifier.weight(1f)) {
+                        IntroCategoryCard(
+                            category = category,
+                            onClick = { onSelectCategory(category) }
+                        )
+                    }
+                }
+
+                if (rowItems.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
@@ -732,6 +753,13 @@ private fun WorryContract.State.Step.titleOrNull(selectedCategory: Category?): S
     WorryContract.State.Step.CategorySelection -> "말씀 찾기"
     WorryContract.State.Step.DetailSelection -> selectedCategory?.title ?: "세부 고민"
     WorryContract.State.Step.CustomInput -> "AI에게 고민 나누기"
+}
+
+private fun WorryContract.State.Step.stepIndex(): Int = when (this) {
+    WorryContract.State.Step.Intro -> 0
+    WorryContract.State.Step.CategorySelection -> 1
+    WorryContract.State.Step.DetailSelection -> 2
+    WorryContract.State.Step.CustomInput -> 3
 }
 
 private fun IconType.toIcon(): ImageVector = when (this) {
