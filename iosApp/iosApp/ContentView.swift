@@ -11,17 +11,25 @@ import UserNotifications
 import UIKit
 
 struct ComposeView: UIViewControllerRepresentable {
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
     func makeUIViewController(context: Context) -> UIViewController {
-        MainViewControllerKt.MainViewController(
+        let coordinator = context.coordinator
+        let viewController = MainViewControllerKt.MainViewController(
             apiKey: geminiApiKey,
             appVersion: appVersion,
             onShareText: { text in
-                share(text: text)
+                coordinator.share(text: text)
             },
             onToggleDailyVerseNotification: { enabled in
                 updateDailyVerseNotification(enabled: enabled.boolValue)
             }
         )
+
+        coordinator.hostViewController = viewController
+        return viewController
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
@@ -32,17 +40,6 @@ struct ComposeView: UIViewControllerRepresentable {
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
-    }
-
-    private func share(text: String) {
-        let activityViewController = UIActivityViewController(
-            activityItems: [text],
-            applicationActivities: nil
-        )
-
-        DispatchQueue.main.async {
-            topViewController()?.present(activityViewController, animated: true)
-        }
     }
 
     private func updateDailyVerseNotification(enabled: Bool) {
@@ -77,23 +74,32 @@ struct ComposeView: UIViewControllerRepresentable {
         }
     }
 
-    private func topViewController(
-        base: UIViewController? = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first(where: { $0.isKeyWindow })?
-            .rootViewController
-    ) -> UIViewController? {
-        if let nav = base as? UINavigationController {
-            return topViewController(base: nav.visibleViewController)
+    final class Coordinator {
+        weak var hostViewController: UIViewController?
+
+        func share(text: String) {
+            DispatchQueue.main.async { [weak self] in
+                guard let hostViewController = self?.hostViewController else { return }
+
+                let activityViewController = UIActivityViewController(
+                    activityItems: [text],
+                    applicationActivities: nil
+                )
+
+                if let popover = activityViewController.popoverPresentationController {
+                    popover.sourceView = hostViewController.view
+                    popover.sourceRect = CGRect(
+                        x: hostViewController.view.bounds.midX,
+                        y: hostViewController.view.bounds.maxY - 40,
+                        width: 1,
+                        height: 1
+                    )
+                }
+
+                let presenter = hostViewController.presentedViewController ?? hostViewController
+                presenter.present(activityViewController, animated: true)
+            }
         }
-        if let tab = base as? UITabBarController {
-            return topViewController(base: tab.selectedViewController)
-        }
-        if let presented = base?.presentedViewController {
-            return topViewController(base: presented)
-        }
-        return base
     }
 }
 

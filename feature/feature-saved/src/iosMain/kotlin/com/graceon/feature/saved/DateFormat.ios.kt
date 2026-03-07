@@ -1,21 +1,24 @@
 package com.graceon.feature.saved
 
-import platform.Foundation.NSDate
-import platform.Foundation.NSDateFormatter
-import platform.Foundation.NSLocale
-import platform.Foundation.currentLocale
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
-private fun formatTimestamp(timestamp: Long, pattern: String): String {
-    val formatter = NSDateFormatter().apply {
-        locale = NSLocale.currentLocale
-        dateFormat = pattern
+private fun formatTimestamp(timestamp: Long, includeKoreanSuffix: Boolean): String {
+    val localDateTime = Instant.fromEpochMilliseconds(timestamp)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+
+    val year = localDateTime.year.toString().padStart(4, '0')
+    val month = localDateTime.monthNumber.toString().padStart(2, '0')
+    val day = localDateTime.dayOfMonth.toString().padStart(2, '0')
+
+    return if (includeKoreanSuffix) {
+        "${year}년 ${month}월 ${day}일"
+    } else {
+        "$year.$month.$day"
     }
-    val unixSeconds = timestamp.toDouble() / 1000.0
-    val appleReferenceOffsetSeconds = 978_307_200.0
-    val date = NSDate(timeIntervalSinceReferenceDate = unixSeconds - appleReferenceOffsetSeconds)
-    return formatter.stringFromDate(date)
 }
 
-internal actual fun formatDate(timestamp: Long): String = formatTimestamp(timestamp, "yyyy.MM.dd")
+internal actual fun formatDate(timestamp: Long): String = formatTimestamp(timestamp, includeKoreanSuffix = false)
 
-internal actual fun formatSectionDate(timestamp: Long): String = formatTimestamp(timestamp, "yyyy년 MM월 dd일")
+internal actual fun formatSectionDate(timestamp: Long): String = formatTimestamp(timestamp, includeKoreanSuffix = true)

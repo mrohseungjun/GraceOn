@@ -13,6 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.graceon.core.ui.theme.Primary
@@ -108,25 +115,25 @@ fun GraceOnBottomBar(
                 label = "홈",
                 active = activeTab == GraceOnBottomTab.Home,
                 onClick = onHomeClick,
-                iconLabel = "H"
+                icon = Icons.Default.Home
             )
             BottomBarButton(
                 label = "말씀",
                 active = activeTab == GraceOnBottomTab.Word,
                 onClick = onWordClick,
-                iconLabel = "W"
+                icon = Icons.Default.AutoAwesome
             )
             BottomBarButton(
                 label = "저장",
                 active = activeTab == GraceOnBottomTab.Saved,
                 onClick = onSavedClick,
-                iconLabel = "S"
+                icon = Icons.Default.BookmarkBorder
             )
             BottomBarButton(
                 label = "마이",
                 active = activeTab == GraceOnBottomTab.Profile,
                 onClick = onProfileClick,
-                iconLabel = "M"
+                icon = Icons.Default.PersonOutline
             )
         }
     }
@@ -137,7 +144,7 @@ private fun BottomBarButton(
     label: String,
     active: Boolean,
     onClick: () -> Unit,
-    iconLabel: String
+    icon: ImageVector
 ) {
     androidx.compose.material3.TextButton(onClick = onClick) {
         Column(
@@ -153,11 +160,11 @@ private fun BottomBarButton(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = iconLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    modifier = Modifier.size(18.dp),
+                    tint = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
