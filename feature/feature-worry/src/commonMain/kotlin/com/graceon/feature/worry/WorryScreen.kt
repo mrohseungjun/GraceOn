@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -404,7 +405,7 @@ private fun IntroCategoryCard(
 ) {
     val palette = category.colorType.palette()
     val accent = palette.accent
-    val subtitle = category.details.take(2).joinToString(", ") { it.title }
+    val subtitle = category.description ?: category.details.take(2).joinToString(", ") { it.title }
 
     Card(
         onClick = onClick,
@@ -754,6 +755,8 @@ private fun IconType.toIcon(): ImageVector = when (this) {
     IconType.USER -> Icons.Default.PersonOutline
     IconType.SUN -> Icons.Default.LightMode
     IconType.HEART -> Icons.Default.FavoriteBorder
+    IconType.SPARKLE -> Icons.Default.AutoAwesome
+    IconType.EDIT -> Icons.Default.Create
 }
 
 @Composable

@@ -1,6 +1,7 @@
 package com.graceon.feature.worry
 
 import com.graceon.domain.data.CategoryData
+import com.graceon.domain.model.Category
 import com.graceon.domain.model.RANDOM_VERSE_PROMPT
 import com.graceon.feature.worry.WorryContract
 import kotlinx.coroutines.CoroutineScope
@@ -67,9 +68,21 @@ class WorryViewModel {
         }
     }
 
-    private fun selectCategory(category: com.graceon.domain.model.Category) {
+    private fun selectCategory(category: Category) {
+        if (category.id == CategoryData.CUSTOM_CATEGORY_ID) {
+            _state.value = _state.value.copy(
+                selectedCategory = category,
+                selectedDetail = null,
+                customWorry = "",
+                step = WorryContract.State.Step.CustomInput,
+                isAiMode = true
+            )
+            return
+        }
+
         _state.value = _state.value.copy(
             selectedCategory = category,
+            selectedDetail = null,
             step = WorryContract.State.Step.DetailSelection
         )
     }
@@ -122,8 +135,19 @@ class WorryViewModel {
             WorryContract.State.Step.Intro -> {
                 // Do nothing or exit app
             }
-            WorryContract.State.Step.CategorySelection, WorryContract.State.Step.CustomInput -> {
+            WorryContract.State.Step.CategorySelection -> {
                 _state.value = _state.value.copy(step = WorryContract.State.Step.Intro)
+            }
+            WorryContract.State.Step.CustomInput -> {
+                _state.value = _state.value.copy(
+                    step = if (_state.value.selectedCategory?.id == CategoryData.CUSTOM_CATEGORY_ID) {
+                        WorryContract.State.Step.CategorySelection
+                    } else {
+                        WorryContract.State.Step.Intro
+                    },
+                    customWorry = "",
+                    selectedCategory = if (_state.value.selectedCategory?.id == CategoryData.CUSTOM_CATEGORY_ID) null else _state.value.selectedCategory
+                )
             }
             WorryContract.State.Step.DetailSelection -> {
                 _state.value = _state.value.copy(

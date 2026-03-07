@@ -8,6 +8,7 @@ data class Category(
     val title: String,
     val iconType: IconType,
     val colorType: ColorType,
+    val description: String? = null,
     val details: List<DetailWorry>
 )
 
@@ -21,7 +22,9 @@ enum class IconType {
     BRIEFCASE,  // 진로/직장
     USER,       // 인간관계
     SUN,        // 삶/미래
-    HEART       // 신앙/마음
+    HEART,      // 신앙/마음
+    SPARKLE,    // 감정/회복
+    EDIT        // 직접 입력
 }
 
 enum class ColorType {
