@@ -12,6 +12,7 @@ import com.graceon.data.repository.SavedPrescriptionRepositoryImpl
 import com.graceon.domain.usecase.DeletePrescriptionUseCase
 import com.graceon.domain.usecase.GeneratePrayerUseCase
 import com.graceon.domain.usecase.GeneratePrescriptionUseCase
+import com.graceon.domain.usecase.GetDailyFreeUsageUseCase
 import com.graceon.domain.usecase.GetSavedPrescriptionsUseCase
 import com.graceon.domain.usecase.SavePrescriptionUseCase
 
@@ -39,6 +40,7 @@ internal fun createGraceOnIosDependencies(
         themePreferences = ThemePreferences(PlatformContext()),
         generatePrescriptionUseCase = GeneratePrescriptionUseCase(prescriptionRepository),
         generatePrayerUseCase = GeneratePrayerUseCase(prescriptionRepository),
+        getDailyFreeUsageUseCase = GetDailyFreeUsageUseCase(prescriptionRepository),
         savePrescriptionUseCase = SavePrescriptionUseCase(savedPrescriptionRepository),
         getSavedPrescriptionsUseCase = GetSavedPrescriptionsUseCase(savedPrescriptionRepository),
         deletePrescriptionUseCase = DeletePrescriptionUseCase(savedPrescriptionRepository)

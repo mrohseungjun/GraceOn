@@ -7,6 +7,12 @@ import com.graceon.domain.model.DetailWorry
  * MVI Contract for Worry Selection Feature
  */
 object WorryContract {
+    data class DailyUsageUiState(
+        val isLoading: Boolean = false,
+        val dailyLimit: Int = 1,
+        val usedToday: Int = 0,
+        val remainingToday: Int = 1
+    )
     
     /**
      * UI State (Immutable)
@@ -17,7 +23,8 @@ object WorryContract {
         val selectedCategory: Category? = null,
         val selectedDetail: DetailWorry? = null,
         val customWorry: String = "",
-        val isAiMode: Boolean = false
+        val isAiMode: Boolean = false,
+        val dailyUsage: DailyUsageUiState = DailyUsageUiState()
     ) {
         enum class Step {
             Intro,
@@ -38,6 +45,7 @@ object WorryContract {
         data class UpdateCustomWorry(val text: String) : Intent
         data object NavigateBack : Intent
         data object ConfirmCustomWorry : Intent
+        data object RefreshDailyUsage : Intent
     }
     
     /**

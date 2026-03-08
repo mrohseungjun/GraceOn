@@ -2,6 +2,7 @@ package com.graceon.core.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
@@ -87,6 +88,38 @@ class GraceOnProxyApiClient(
         }
     }
 
+    suspend fun getDailyFreeUsage(): DailyFreeUsageStatus {
+        require(baseUrl.isNotBlank()) {
+            "GraceOn proxy URL is missing. Configure GRACEON_API_BASE_URL for this platform."
+        }
+
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
+        }
+
+        suspend fun performRequest(accessToken: String) = client.get(baseUrl) {
+            header("apikey", supabaseAnonKey)
+            header(HttpHeaders.Authorization, "Bearer $accessToken")
+        }
+
+        var response = performRequest(authManager.getAccessToken())
+
+        if (response.status.value == 401) {
+            authManager.resetSession()
+            response = performRequest(authManager.getAccessToken())
+        }
+
+        if (!response.status.isSuccess()) {
+            val errorPayload = runCatching { response.body<ProxyErrorResponse>() }.getOrNull()
+            throw GraceOnProxyException(
+                message = errorPayload?.error ?: "GraceOn proxy usage request failed",
+                statusCode = response.status.value
+            )
+        }
+
+        return response.body()
+    }
+
     fun close() {
         client.close()
     }
@@ -100,6 +133,13 @@ private data class ProxyGenerateRequest(
 @Serializable
 private data class ProxyGenerateResponse(
     val text: String
+)
+
+@Serializable
+data class DailyFreeUsageStatus(
+    val dailyLimit: Int,
+    val usedToday: Int,
+    val remainingToday: Int
 )
 
 @Serializable

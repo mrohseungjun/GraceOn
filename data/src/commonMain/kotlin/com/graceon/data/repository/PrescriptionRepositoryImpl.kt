@@ -3,6 +3,7 @@ package com.graceon.data.repository
 import com.graceon.core.common.DispatcherProvider
 import com.graceon.core.common.Result
 import com.graceon.core.network.GraceOnProxyApiClient
+import com.graceon.domain.model.DailyFreeUsage
 import com.graceon.domain.model.Prayer
 import com.graceon.domain.model.Prescription
 import com.graceon.domain.model.WorryContext
@@ -92,6 +93,23 @@ class PrescriptionRepositoryImpl(
                 val prayerText = proxyApiClient.generateContent(prompt)
                 Result.Success(Prayer(prayerText.trim()))
                 
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override suspend fun getDailyFreeUsage(): Result<DailyFreeUsage> {
+        return withContext(dispatcherProvider.io) {
+            try {
+                val status = proxyApiClient.getDailyFreeUsage()
+                Result.Success(
+                    DailyFreeUsage(
+                        dailyLimit = status.dailyLimit,
+                        usedToday = status.usedToday,
+                        remainingToday = status.remainingToday
+                    )
+                )
             } catch (e: Exception) {
                 Result.Error(e)
             }

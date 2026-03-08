@@ -15,6 +15,12 @@ interface GenerateContentRequest {
   prompt?: string
 }
 
+interface DailyUsageStatusResponse {
+  dailyLimit: number
+  usedToday: number
+  remainingToday: number
+}
+
 interface GeminiGenerateResponse {
   candidates?: Array<{
     content?: {
@@ -31,7 +37,7 @@ Deno.serve(async (request) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
-  if (request.method !== "POST") {
+  if (request.method !== "POST" && request.method !== "GET") {
     return Response.json(
       { error: "Method not allowed" },
       { status: 405, headers: corsHeaders },
@@ -85,13 +91,20 @@ Deno.serve(async (request) => {
   }
 
   const currentUserMetadata = (user.user_metadata ?? {}) as Record<string, unknown>
-  const usageDate = String(currentUserMetadata[DAILY_USAGE_DATE_KEY] ?? "")
-  const usageCount =
-    usageDate === todayInKorea()
-      ? Number(currentUserMetadata[DAILY_USAGE_COUNT_KEY] ?? 0)
-      : 0
+  const usage = resolveDailyUsage(currentUserMetadata)
 
-  if (usageCount >= DAILY_LIMIT) {
+  if (request.method === "GET") {
+    return Response.json(
+      {
+        dailyLimit: DAILY_LIMIT,
+        usedToday: usage.usedToday,
+        remainingToday: usage.remainingToday,
+      } satisfies DailyUsageStatusResponse,
+      { status: 200, headers: corsHeaders },
+    )
+  }
+
+  if (usage.usedToday >= DAILY_LIMIT) {
     return Response.json(
       { error: "오늘 무료 말씀 1회를 모두 사용했습니다. 내일 다시 시도해주세요." },
       { status: 429, headers: corsHeaders },
@@ -120,7 +133,7 @@ Deno.serve(async (request) => {
   const reservedMetadata = {
     ...currentUserMetadata,
     [DAILY_USAGE_DATE_KEY]: todayInKorea(),
-    [DAILY_USAGE_COUNT_KEY]: usageCount + 1,
+    [DAILY_USAGE_COUNT_KEY]: usage.usedToday + 1,
   }
 
   const { error: reserveUsageError } = await adminClient.auth.admin.updateUserById(user.id, {
@@ -180,3 +193,16 @@ Deno.serve(async (request) => {
 
   return Response.json({ text }, { status: 200, headers: corsHeaders })
 })
+
+function resolveDailyUsage(userMetadata: Record<string, unknown>) {
+  const usageDate = String(userMetadata[DAILY_USAGE_DATE_KEY] ?? "")
+  const usedToday =
+    usageDate === todayInKorea()
+      ? Number(userMetadata[DAILY_USAGE_COUNT_KEY] ?? 0)
+      : 0
+
+  return {
+    usedToday,
+    remainingToday: Math.max(DAILY_LIMIT - usedToday, 0),
+  }
+}

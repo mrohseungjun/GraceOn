@@ -6,6 +6,7 @@ import com.graceon.data.datastore.ThemePreferences
 import com.graceon.domain.usecase.DeletePrescriptionUseCase
 import com.graceon.domain.usecase.GeneratePrayerUseCase
 import com.graceon.domain.usecase.GeneratePrescriptionUseCase
+import com.graceon.domain.usecase.GetDailyFreeUsageUseCase
 import com.graceon.domain.usecase.GetSavedPrescriptionsUseCase
 import com.graceon.domain.usecase.SavePrescriptionUseCase
 
@@ -15,6 +16,7 @@ internal data class GraceOnDependencies(
     val themePreferences: ThemePreferences,
     val generatePrescriptionUseCase: GeneratePrescriptionUseCase,
     val generatePrayerUseCase: GeneratePrayerUseCase,
+    val getDailyFreeUsageUseCase: GetDailyFreeUsageUseCase,
     val savePrescriptionUseCase: SavePrescriptionUseCase,
     val getSavedPrescriptionsUseCase: GetSavedPrescriptionsUseCase,
     val deletePrescriptionUseCase: DeletePrescriptionUseCase

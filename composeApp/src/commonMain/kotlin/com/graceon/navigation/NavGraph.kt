@@ -77,7 +77,11 @@ internal fun NavGraph(
     onToggleDarkTheme: (Boolean) -> Unit = {},
     onOnboardingComplete: () -> Unit = {}
 ) {
-    val worryViewModel = remember { WorryViewModel() }
+    val worryViewModel = remember {
+        WorryViewModel(
+            getDailyFreeUsageUseCase = dependencies.getDailyFreeUsageUseCase
+        )
+    }
     val savedViewModel = remember {
         SavedViewModel(
             getSavedPrescriptionsUseCase = dependencies.getSavedPrescriptionsUseCase,
@@ -137,7 +141,12 @@ internal fun NavGraph(
 
     PlatformBackHandler(
         enabled = backStack.size > 1,
-        onBack = ::popBackStack
+        onBack = {
+            when (backStack.lastOrNull()) {
+                is NavEntry.Result -> popToWorry()
+                else -> popBackStack()
+            }
+        }
     )
 
     AnimatedContent(
@@ -217,7 +226,7 @@ internal fun NavGraph(
                 }
                 ResultScreen(
                     viewModel = viewModel,
-                    onNavigateBack = ::popBackStack,
+                    onNavigateBack = ::popToWorry,
                     onNavigateToSaved = { navigate(NavEntry.Saved) },
                     onNavigateToProfile = { replaceRoot(NavEntry.Profile) },
                     onShareText = onShareText,

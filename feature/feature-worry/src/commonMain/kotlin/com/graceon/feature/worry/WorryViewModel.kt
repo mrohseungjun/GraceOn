@@ -3,7 +3,9 @@ package com.graceon.feature.worry
 import com.graceon.domain.data.CategoryData
 import com.graceon.domain.model.Category
 import com.graceon.domain.model.RANDOM_VERSE_PROMPT
+import com.graceon.domain.usecase.GetDailyFreeUsageUseCase
 import com.graceon.feature.worry.WorryContract
+import com.graceon.core.common.Result
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,7 +19,9 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel for Worry Selection (MVI Pattern)
  */
-class WorryViewModel {
+class WorryViewModel(
+    private val getDailyFreeUsageUseCase: GetDailyFreeUsageUseCase
+) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _state = MutableStateFlow(WorryContract.State())
@@ -28,6 +32,7 @@ class WorryViewModel {
 
     init {
         loadCategories()
+        refreshDailyUsage()
     }
 
     fun handleIntent(intent: WorryContract.Intent) {
@@ -39,6 +44,7 @@ class WorryViewModel {
             is WorryContract.Intent.UpdateCustomWorry -> updateCustomWorry(intent.text)
             is WorryContract.Intent.NavigateBack -> navigateBack()
             is WorryContract.Intent.ConfirmCustomWorry -> confirmCustomWorry()
+            is WorryContract.Intent.RefreshDailyUsage -> refreshDailyUsage()
         }
     }
 
@@ -154,6 +160,35 @@ class WorryViewModel {
                     step = WorryContract.State.Step.CategorySelection,
                     selectedCategory = null
                 )
+            }
+        }
+    }
+
+    private fun refreshDailyUsage() {
+        if (_state.value.dailyUsage.isLoading) return
+
+        scope.launch {
+            _state.value = _state.value.copy(
+                dailyUsage = _state.value.dailyUsage.copy(isLoading = true)
+            )
+
+            when (val result = getDailyFreeUsageUseCase()) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(
+                        dailyUsage = WorryContract.DailyUsageUiState(
+                            isLoading = false,
+                            dailyLimit = result.data.dailyLimit,
+                            usedToday = result.data.usedToday,
+                            remainingToday = result.data.remainingToday
+                        )
+                    )
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(
+                        dailyUsage = _state.value.dailyUsage.copy(isLoading = false)
+                    )
+                }
+                Result.Loading -> Unit
             }
         }
     }

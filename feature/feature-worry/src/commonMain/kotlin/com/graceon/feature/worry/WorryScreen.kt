@@ -110,6 +110,12 @@ fun WorryScreen(
         }
     }
 
+    LaunchedEffect(state.step) {
+        if (state.step == WorryContract.State.Step.Intro) {
+            viewModel.handleIntent(WorryContract.Intent.RefreshDailyUsage)
+        }
+    }
+
     GraceOnScaffold(
         title = state.step.titleOrNull(state.selectedCategory),
         onNavigateBack = if (state.step == WorryContract.State.Step.Intro) null else {
@@ -200,6 +206,7 @@ private fun AnimatedWorryContent(
         when (step) {
             WorryContract.State.Step.Intro -> IntroStep(
                 categories = state.categories,
+                dailyUsage = state.dailyUsage,
                 onStartCategoryMode = onStartCategoryMode,
                 onStartAiMode = onStartAiMode,
                 onSelectCategory = onSelectCategory,
@@ -225,6 +232,7 @@ private fun AnimatedWorryContent(
 @Composable
 private fun IntroStep(
     categories: List<Category>,
+    dailyUsage: WorryContract.DailyUsageUiState,
     onStartCategoryMode: () -> Unit,
     onStartAiMode: () -> Unit,
     onSelectCategory: (Category) -> Unit,
@@ -273,6 +281,10 @@ private fun IntroStep(
                 description = "복잡한 고민 없이, 지금 당신에게 가장 필요한 위로를 바로 뽑아보세요.",
                 onClick = onStartAiMode
             )
+        }
+
+        item {
+            DailyUsageCard(dailyUsage = dailyUsage)
         }
 
         item {
@@ -337,6 +349,52 @@ private fun IntroStep(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DailyUsageCard(
+    dailyUsage: WorryContract.DailyUsageUiState
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassSurface,
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "오늘 무료 횟수",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = if (dailyUsage.isLoading) {
+                    "남은 횟수를 확인하는 중..."
+                } else {
+                    "${dailyUsage.remainingToday}회 남음 · 총 ${dailyUsage.dailyLimit}회 중 ${dailyUsage.usedToday}회 사용"
+                },
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = if (dailyUsage.remainingToday > 0) {
+                    "오늘은 아직 말씀을 더 받을 수 있어요."
+                } else {
+                    "오늘 무료 횟수를 모두 사용했습니다. 내일 다시 열립니다."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 18.sp
+            )
         }
     }
 }

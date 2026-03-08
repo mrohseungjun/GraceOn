@@ -1,6 +1,7 @@
 package com.graceon.domain.repository
 
 import com.graceon.core.common.Result
+import com.graceon.domain.model.DailyFreeUsage
 import com.graceon.domain.model.Prayer
 import com.graceon.domain.model.Prescription
 import com.graceon.domain.model.WorryContext
@@ -22,4 +23,6 @@ interface PrescriptionRepository {
         worryContext: WorryContext,
         verse: String
     ): Result<Prayer>
+
+    suspend fun getDailyFreeUsage(): Result<DailyFreeUsage>
 }
