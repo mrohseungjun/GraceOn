@@ -1,9 +1,15 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { createClient } from "npm:@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
+
+const DAILY_LIMIT = 1
+const DAILY_USAGE_DATE_KEY = "graceon_daily_free_generation_date"
+const DAILY_USAGE_COUNT_KEY = "graceon_daily_free_generation_count"
+const DAILY_USAGE_TIMEZONE = "Asia/Seoul"
 
 interface GenerateContentRequest {
   prompt?: string
@@ -16,6 +22,9 @@ interface GeminiGenerateResponse {
     }
   }>
 }
+
+const todayInKorea = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: DAILY_USAGE_TIMEZONE }).format(new Date())
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -30,10 +39,62 @@ Deno.serve(async (request) => {
   }
 
   const geminiApiKey = Deno.env.get("GEMINI_API_KEY") ?? ""
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   if (!geminiApiKey) {
     return Response.json(
       { error: "Missing GEMINI_API_KEY secret" },
       { status: 500, headers: corsHeaders },
+    )
+  }
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+    return Response.json(
+      { error: "Missing Supabase runtime configuration" },
+      { status: 500, headers: corsHeaders },
+    )
+  }
+
+  const authorization = request.headers.get("Authorization")
+  if (!authorization?.startsWith("Bearer ")) {
+    return Response.json(
+      { error: "Authorization header is required" },
+      { status: 401, headers: corsHeaders },
+    )
+  }
+
+  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: authorization,
+      },
+    },
+  })
+
+  const {
+    data: { user },
+    error: userError,
+  } = await userClient.auth.getUser()
+
+  if (userError || !user) {
+    console.error("Supabase user lookup failed", userError)
+    return Response.json(
+      { error: "Authentication is required" },
+      { status: 401, headers: corsHeaders },
+    )
+  }
+
+  const currentUserMetadata = (user.user_metadata ?? {}) as Record<string, unknown>
+  const usageDate = String(currentUserMetadata[DAILY_USAGE_DATE_KEY] ?? "")
+  const usageCount =
+    usageDate === todayInKorea()
+      ? Number(currentUserMetadata[DAILY_USAGE_COUNT_KEY] ?? 0)
+      : 0
+
+  if (usageCount >= DAILY_LIMIT) {
+    return Response.json(
+      { error: "오늘 무료 말씀 1회를 모두 사용했습니다. 내일 다시 시도해주세요." },
+      { status: 429, headers: corsHeaders },
     )
   }
 
@@ -52,6 +113,25 @@ Deno.serve(async (request) => {
     return Response.json(
       { error: "prompt is required" },
       { status: 400, headers: corsHeaders },
+    )
+  }
+
+  const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey)
+  const reservedMetadata = {
+    ...currentUserMetadata,
+    [DAILY_USAGE_DATE_KEY]: todayInKorea(),
+    [DAILY_USAGE_COUNT_KEY]: usageCount + 1,
+  }
+
+  const { error: reserveUsageError } = await adminClient.auth.admin.updateUserById(user.id, {
+    user_metadata: reservedMetadata,
+  })
+
+  if (reserveUsageError) {
+    console.error("Failed to reserve daily generation usage", reserveUsageError)
+    return Response.json(
+      { error: "무료 사용량을 확인하지 못했습니다. 잠시 후 다시 시도해주세요." },
+      { status: 500, headers: corsHeaders },
     )
   }
 
@@ -76,6 +156,9 @@ Deno.serve(async (request) => {
   if (!geminiResponse.ok) {
     const errorText = await geminiResponse.text()
     console.error("Gemini request failed", geminiResponse.status, errorText)
+    await adminClient.auth.admin.updateUserById(user.id, {
+      user_metadata: currentUserMetadata,
+    })
     return Response.json(
       { error: "Gemini request failed" },
       { status: geminiResponse.status, headers: corsHeaders },
@@ -86,6 +169,9 @@ Deno.serve(async (request) => {
   const text = payload.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
 
   if (!text) {
+    await adminClient.auth.admin.updateUserById(user.id, {
+      user_metadata: currentUserMetadata,
+    })
     return Response.json(
       { error: "Empty response from Gemini" },
       { status: 502, headers: corsHeaders },

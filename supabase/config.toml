@@ -1,2 +1,7 @@
+[auth]
+enabled = true
+enable_signup = true
+enable_anonymous_sign_ins = true
+
 [functions.generate-gemini-content]
 verify_jwt = false

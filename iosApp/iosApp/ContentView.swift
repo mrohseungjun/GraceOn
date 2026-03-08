@@ -19,6 +19,7 @@ struct ComposeView: UIViewControllerRepresentable {
         let coordinator = context.coordinator
         let viewController = MainViewControllerKt.MainViewController(
             apiBaseUrl: graceOnApiBaseUrl,
+            supabaseAnonKey: supabaseAnonKey,
             appVersion: appVersion,
             onShareText: { text in
                 coordinator.share(text: text)
@@ -36,6 +37,10 @@ struct ComposeView: UIViewControllerRepresentable {
 
     private var graceOnApiBaseUrl: String {
         Bundle.main.object(forInfoDictionaryKey: "GRACEON_API_BASE_URL") as? String ?? ""
+    }
+
+    private var supabaseAnonKey: String {
+        Bundle.main.object(forInfoDictionaryKey: "SUPABASE_ANON_KEY") as? String ?? ""
     }
 
     private var appVersion: String {

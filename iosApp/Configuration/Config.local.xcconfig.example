@@ -1,1 +1,3 @@
-GRACEON_API_BASE_URL=https://your-project-ref.supabase.co/functions/v1/generate-gemini-content
+// In xcconfig, '//' starts a comment, so URLs must use https:/$()/...
+GRACEON_API_BASE_URL=https:/$()/your-project-ref.supabase.co/functions/v1/generate-gemini-content
+SUPABASE_ANON_KEY=your-supabase-anon-key

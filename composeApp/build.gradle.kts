@@ -89,7 +89,9 @@ android {
         }
 
         val graceOnApiBaseUrl = localProperties.getProperty("GRACEON_API_BASE_URL") ?: ""
+        val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""
         buildConfigField("String", "GRACEON_API_BASE_URL", "\"$graceOnApiBaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
     buildTypes {

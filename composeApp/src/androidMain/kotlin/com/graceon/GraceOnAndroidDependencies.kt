@@ -1,6 +1,7 @@
 package com.graceon
 
 import android.content.Context
+import com.graceon.core.network.AndroidSupabaseSessionStore
 import com.graceon.core.common.DefaultDispatcherProvider
 import com.graceon.core.network.GraceOnProxyApiClient
 import com.graceon.data.datastore.OnboardingPreferences
@@ -17,10 +18,15 @@ import com.graceon.domain.usecase.SavePrescriptionUseCase
 
 internal fun createGraceOnAndroidDependencies(
     context: Context,
-    apiBaseUrl: String
+    apiBaseUrl: String,
+    supabaseAnonKey: String
 ): GraceOnDependencies {
     val dispatcherProvider = DefaultDispatcherProvider()
-    val proxyApiClient = GraceOnProxyApiClient(baseUrl = apiBaseUrl)
+    val proxyApiClient = GraceOnProxyApiClient(
+        baseUrl = apiBaseUrl,
+        supabaseAnonKey = supabaseAnonKey,
+        sessionStore = AndroidSupabaseSessionStore(context)
+    )
     val prescriptionRepository = PrescriptionRepositoryImpl(
         proxyApiClient = proxyApiClient,
         dispatcherProvider = dispatcherProvider

@@ -21,21 +21,28 @@ supabase link --project-ref <your-project-ref>
 supabase secrets set GEMINI_API_KEY=your_gemini_api_key
 ```
 
-5. Deploy the edge function
+5. Enable Anonymous sign-ins in Supabase Dashboard
+- `Authentication > Providers > Anonymous`
+- Turn it on before testing the app
+
+6. Deploy the edge function
 ```bash
 supabase functions deploy generate-gemini-content --no-verify-jwt
 ```
 
-6. Put the deployed function URL into the app
+7. Put the deployed function URL and anon key into the app
 
 Android `/Users/oseungjun/AndroidStudioProjects/GraceOn/local.properties`
 ```properties
 GRACEON_API_BASE_URL=https://<your-project-ref>.supabase.co/functions/v1/generate-gemini-content
+SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
 iOS `/Users/oseungjun/AndroidStudioProjects/GraceOn/iosApp/Configuration/Config.local.xcconfig`
 ```xcconfig
-GRACEON_API_BASE_URL=https://<your-project-ref>.supabase.co/functions/v1/generate-gemini-content
+// In xcconfig, '//' starts a comment, so use https:/$()/...
+GRACEON_API_BASE_URL=https:/$()/<your-project-ref>.supabase.co/functions/v1/generate-gemini-content
+SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
-7. Rebuild the app
+8. Rebuild the app

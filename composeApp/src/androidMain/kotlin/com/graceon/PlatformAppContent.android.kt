@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 internal actual fun PlatformAppContent(
     apiBaseUrl: String,
+    supabaseAnonKey: String,
     appVersion: String,
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit
@@ -16,7 +17,8 @@ internal actual fun PlatformAppContent(
     val dependencies = remember(context) {
         createGraceOnAndroidDependencies(
             context = context,
-            apiBaseUrl = apiBaseUrl.ifBlank { BuildConfig.GRACEON_API_BASE_URL }
+            apiBaseUrl = apiBaseUrl.ifBlank { BuildConfig.GRACEON_API_BASE_URL },
+            supabaseAnonKey = supabaseAnonKey.ifBlank { BuildConfig.SUPABASE_ANON_KEY }
         )
     }
 

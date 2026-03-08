@@ -92,11 +92,14 @@ app
 Android `local.properties`
 ```properties
 GRACEON_API_BASE_URL=https://<your-project-ref>.supabase.co/functions/v1/generate-gemini-content
+SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
 iOS `iosApp/Configuration/Config.local.xcconfig`
 ```xcconfig
-GRACEON_API_BASE_URL=https://<your-project-ref>.supabase.co/functions/v1/generate-gemini-content
+// In xcconfig, '//' starts a comment, so use https:/$()/...
+GRACEON_API_BASE_URL=https:/$()/<your-project-ref>.supabase.co/functions/v1/generate-gemini-content
+SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
 Supabase Edge Function 설정 절차는 `SUPABASE_EDGE_FUNCTIONS_SETUP.md`를 참고하세요.
