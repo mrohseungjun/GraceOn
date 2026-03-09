@@ -12,11 +12,13 @@ internal object SupabaseAuthCallbackBridge {
 
     fun emit(url: String) {
         if (url.isNotBlank()) {
+            println("GraceOnAuth callback received: $url")
             _callbackUrl.value = url
         }
     }
 
     fun clear() {
+        println("GraceOnAuth callback cleared")
         _callbackUrl.value = null
     }
 }

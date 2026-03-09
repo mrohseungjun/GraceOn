@@ -20,6 +20,7 @@
             android:name="com.example.graceon.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.GraceOn">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

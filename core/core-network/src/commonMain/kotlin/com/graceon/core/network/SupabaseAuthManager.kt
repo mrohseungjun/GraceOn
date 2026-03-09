@@ -172,6 +172,9 @@ internal class SupabaseAuthManager(
             append(SUPABASE_AUTH_REDIRECT_URL.encodeURLQueryComponent())
         }
 
+        println("GraceOnAuth starting Google sign-in")
+        println("GraceOnAuth authorizeUrl=$authorizeUrl")
+
         val callbackUrl = coroutineScope {
             SupabaseAuthCallbackBridge.clear()
             val callbackWaiter = async {
@@ -179,16 +182,20 @@ internal class SupabaseAuthManager(
                     url?.startsWith(SUPABASE_AUTH_REDIRECT_URL.substringBefore('?')) == true
                 }.orEmpty()
             }
+            println("GraceOnAuth opening browser for Google sign-in")
             openUrl(authorizeUrl)
             withTimeoutOrNull(180_000L) {
                 callbackWaiter.await()
             }
         } ?: throw Exception("Google 로그인 시간이 초과되었습니다. 다시 시도해주세요.")
 
+        println("GraceOnAuth callbackUrl=$callbackUrl")
+
         val session = parseSessionFromCallbackUrl(callbackUrl)
         mutex.withLock {
             sessionStore.save(session)
         }
+        println("GraceOnAuth session saved successfully")
         SupabaseAuthCallbackBridge.clear()
     }
 
