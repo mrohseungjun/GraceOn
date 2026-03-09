@@ -177,6 +177,12 @@ internal fun NavGraph(
                         dependencies.signInWithGoogle()
                         onLoginComplete()
                         replaceRoot(NavEntry.Worry)
+                    },
+                    onResendConfirmationEmail = { email ->
+                        dependencies.resendConfirmationEmail(email)
+                    },
+                    onSendPasswordResetEmail = { email ->
+                        dependencies.sendPasswordResetEmail(email)
                     }
                 )
             }

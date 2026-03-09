@@ -119,7 +119,7 @@ struct ContentView: View {
         ComposeView()
             .ignoresSafeArea()
             .onOpenURL { url in
-                SupabaseAuthCallbackBridgeKt.handleSupabaseAuthCallbackUrl(url: url.absoluteString)
+                AuthBridgeKt.handleAuthCallbackUrl(url: url.absoluteString)
             }
     }
 }

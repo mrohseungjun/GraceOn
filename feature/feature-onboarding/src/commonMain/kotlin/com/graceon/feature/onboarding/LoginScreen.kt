@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -66,7 +65,9 @@ private enum class AuthMode {
 fun LoginScreen(
     onSignIn: suspend (String, String) -> Unit,
     onSignUp: suspend (String, String) -> Boolean,
-    onGoogleLogin: suspend () -> Unit
+    onGoogleLogin: suspend () -> Unit,
+    onResendConfirmationEmail: suspend (String) -> Unit,
+    onSendPasswordResetEmail: suspend (String) -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -81,6 +82,13 @@ fun LoginScreen(
         }
         if (password.length < 6) {
             return "비밀번호는 6자 이상이어야 합니다."
+        }
+        return null
+    }
+
+    fun validateEmailOnly(): String? {
+        if (email.isBlank() || "@" !in email) {
+            return "이메일 주소를 먼저 입력해주세요."
         }
         return null
     }
@@ -166,6 +174,44 @@ fun LoginScreen(
                                 }
                             isLoading = false
                         }
+                    },
+                    onResendConfirmationEmail = {
+                        val error = validateEmailOnly()
+                        if (error != null) {
+                            coroutineScope.launch { snackbarHostState.showSnackbar(error) }
+                            return@AuthCard
+                        }
+                        coroutineScope.launch {
+                            isLoading = true
+                            runCatching {
+                                onResendConfirmationEmail(email.trim())
+                                snackbarHostState.showSnackbar("인증 메일을 다시 보냈습니다. 메일함을 확인해주세요.")
+                            }.onFailure { throwable ->
+                                snackbarHostState.showSnackbar(
+                                    throwable.message ?: "인증 메일 재발송에 실패했습니다."
+                                )
+                            }
+                            isLoading = false
+                        }
+                    },
+                    onSendPasswordResetEmail = {
+                        val error = validateEmailOnly()
+                        if (error != null) {
+                            coroutineScope.launch { snackbarHostState.showSnackbar(error) }
+                            return@AuthCard
+                        }
+                        coroutineScope.launch {
+                            isLoading = true
+                            runCatching {
+                                onSendPasswordResetEmail(email.trim())
+                                snackbarHostState.showSnackbar("비밀번호 재설정 메일을 보냈습니다. 메일함을 확인해주세요.")
+                            }.onFailure { throwable ->
+                                snackbarHostState.showSnackbar(
+                                    throwable.message ?: "비밀번호 재설정 메일 전송에 실패했습니다."
+                                )
+                            }
+                            isLoading = false
+                        }
                     }
                 )
             }
@@ -180,9 +226,8 @@ fun LoginScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 20.dp)
+                .align(Alignment.Center)
+                .padding(horizontal = 24.dp)
         )
     }
 }
@@ -197,7 +242,9 @@ private fun AuthCard(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    onGoogleLogin: () -> Unit
+    onGoogleLogin: () -> Unit,
+    onResendConfirmationEmail: () -> Unit,
+    onSendPasswordResetEmail: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -323,11 +370,55 @@ private fun AuthCard(
                     contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
                 )
             ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+                    )
+                } else {
+                    Text(
+                        text = "Google로 계속",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            if (isLoading) {
                 Text(
-                    text = "Google로 계속",
-                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    text = "로그인 화면을 여는 중입니다. 브라우저가 열리면 Google 로그인을 완료해주세요.",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = Secondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
+            }
+
+            if (mode == AuthMode.SignUp) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = onResendConfirmationEmail,
+                        enabled = !isLoading
+                    ) {
+                        Text("인증 메일 재발송")
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = onSendPasswordResetEmail,
+                        enabled = !isLoading
+                    ) {
+                        Text("비밀번호 재설정")
+                    }
+                }
             }
 
             Text(

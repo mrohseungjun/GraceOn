@@ -22,6 +22,8 @@ internal data class GraceOnDependencies(
     val deletePrescriptionUseCase: DeletePrescriptionUseCase,
     val signInWithEmail: suspend (String, String) -> Unit,
     val signUpWithEmail: suspend (String, String) -> Boolean,
+    val resendConfirmationEmail: suspend (String) -> Unit,
+    val sendPasswordResetEmail: suspend (String) -> Unit,
     val signInWithGoogle: suspend () -> Unit,
     val logout: suspend () -> Unit
 )

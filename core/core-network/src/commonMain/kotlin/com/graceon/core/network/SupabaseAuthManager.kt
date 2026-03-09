@@ -63,7 +63,7 @@ internal class SupabaseAuthManager(
             sessionStore.clear()
         }
 
-        throw Exception("로그인이 필요합니다. Google 계정으로 로그인해주세요.")
+        throw Exception("로그인이 필요합니다. 메일 또는 Google 계정으로 로그인해주세요.")
     }
 
     suspend fun signInWithEmail(email: String, password: String) {
@@ -88,6 +88,47 @@ internal class SupabaseAuthManager(
         }
     }
 
+    suspend fun resendConfirmationEmail(email: String) {
+        require(supabaseUrl.isNotBlank()) {
+            "Supabase project URL is missing. Check GRACEON_API_BASE_URL."
+        }
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
+        }
+
+        val response = client.post("$supabaseUrl/auth/v1/resend") {
+            applySupabaseHeaders()
+            setBody(SupabaseResendOtpRequest(type = "signup", email = email.trim()))
+        }
+
+        if (!response.status.isSuccess()) {
+            throw createAuthException(response.bodyAsText())
+        }
+    }
+
+    suspend fun sendPasswordResetEmail(email: String) {
+        require(supabaseUrl.isNotBlank()) {
+            "Supabase project URL is missing. Check GRACEON_API_BASE_URL."
+        }
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
+        }
+
+        val response = client.post("$supabaseUrl/auth/v1/recover") {
+            applySupabaseHeaders()
+            setBody(
+                SupabaseRecoverPasswordRequest(
+                    email = email.trim(),
+                    redirectTo = SUPABASE_AUTH_REDIRECT_URL
+                )
+            )
+        }
+
+        if (!response.status.isSuccess()) {
+            throw createAuthException(response.bodyAsText())
+        }
+    }
+
     suspend fun signUpWithEmail(email: String, password: String): EmailSignUpResult {
         require(supabaseUrl.isNotBlank()) {
             "Supabase project URL is missing. Check GRACEON_API_BASE_URL."
@@ -103,15 +144,6 @@ internal class SupabaseAuthManager(
 
         if (!response.status.isSuccess()) {
             throw createAuthException(response.bodyAsText())
-        }
-
-        val payload = response.body<SupabaseAuthResponse>()
-        val session = runCatching { payload.toSession() }.getOrNull()
-        if (session != null) {
-            mutex.withLock {
-                sessionStore.save(session)
-            }
-            return EmailSignUpResult.SignedIn
         }
 
         return EmailSignUpResult.EmailConfirmationRequired
@@ -170,14 +202,34 @@ internal class SupabaseAuthManager(
             json.decodeFromString<SupabaseAuthErrorResponse>(rawBody)
         }.getOrNull()
 
-        val message = error?.message()
-            ?: error?.errorCode?.let { code ->
-                when (code) {
-                    "email_exists" -> "이미 가입된 이메일입니다. 로그인으로 진행해주세요."
-                    "email_not_confirmed" -> "이메일 인증이 아직 완료되지 않았습니다. 메일함을 확인해주세요."
-                    "invalid_credentials" -> "이메일 또는 비밀번호가 올바르지 않습니다."
-                    else -> null
+        val normalizedBody = rawBody.lowercase()
+        val message = error?.errorCode?.let { code ->
+            when (code) {
+                "email_exists", "user_already_exists" -> "이미 가입된 이메일입니다. 로그인으로 진행해주세요."
+                "email_not_confirmed" -> "이메일 인증이 아직 완료되지 않았습니다. 메일함을 확인해주세요."
+                "invalid_credentials" -> "이메일 또는 비밀번호가 올바르지 않습니다."
+                else -> null
+            }
+        }
+            ?: error?.message()?.let { messageText ->
+                when {
+                    "Invalid login credentials".equals(messageText, ignoreCase = true) ->
+                        "이메일 또는 비밀번호가 올바르지 않습니다."
+                    "Email not confirmed".equals(messageText, ignoreCase = true) ->
+                        "이메일 인증이 아직 완료되지 않았습니다. 메일함을 확인해주세요."
+                    "User already registered".equals(messageText, ignoreCase = true) ->
+                        "이미 가입된 이메일입니다. 로그인으로 진행해주세요."
+                    else -> messageText
                 }
+            }
+            ?: when {
+                "invalid login credentials" in normalizedBody ->
+                    "이메일 또는 비밀번호가 올바르지 않습니다."
+                "email not confirmed" in normalizedBody ->
+                    "이메일 인증이 아직 완료되지 않았습니다. 메일함을 확인해주세요."
+                "user already registered" in normalizedBody || "email exists" in normalizedBody ->
+                    "이미 가입된 이메일입니다. 로그인으로 진행해주세요."
+                else -> null
             }
             ?: if ("anonymous_provider_disabled" in rawBody) {
                 "Supabase anonymous sign-ins are disabled. Enable Anonymous provider in Supabase Auth settings."
@@ -294,6 +346,19 @@ private data class SupabaseEmailSignUpRequest(
 private data class SupabasePasswordLoginRequest(
     val email: String,
     val password: String
+)
+
+@Serializable
+private data class SupabaseResendOtpRequest(
+    val type: String,
+    val email: String
+)
+
+@Serializable
+private data class SupabaseRecoverPasswordRequest(
+    val email: String,
+    @SerialName("redirect_to")
+    val redirectTo: String
 )
 
 @Serializable

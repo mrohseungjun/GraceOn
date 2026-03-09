@@ -54,6 +54,12 @@ internal fun createGraceOnAndroidDependencies(
         signUpWithEmail = { email, password ->
             proxyApiClient.signUpWithEmail(email, password)
         },
+        resendConfirmationEmail = { email ->
+            proxyApiClient.resendConfirmationEmail(email)
+        },
+        sendPasswordResetEmail = { email ->
+            proxyApiClient.sendPasswordResetEmail(email)
+        },
         signInWithGoogle = {
             proxyApiClient.signInWithGoogle { url ->
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {

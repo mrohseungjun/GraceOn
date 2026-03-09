@@ -51,6 +51,12 @@ internal fun createGraceOnIosDependencies(
         signUpWithEmail = { email, password ->
             proxyApiClient.signUpWithEmail(email, password)
         },
+        resendConfirmationEmail = { email ->
+            proxyApiClient.resendConfirmationEmail(email)
+        },
+        sendPasswordResetEmail = { email ->
+            proxyApiClient.sendPasswordResetEmail(email)
+        },
         signInWithGoogle = {
             proxyApiClient.signInWithGoogle(openUrl)
         },

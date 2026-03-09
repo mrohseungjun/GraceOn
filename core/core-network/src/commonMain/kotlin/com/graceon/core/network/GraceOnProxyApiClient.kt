@@ -139,6 +139,14 @@ class GraceOnProxyApiClient(
     suspend fun signUpWithEmail(email: String, password: String): Boolean {
         return authManager.signUpWithEmail(email, password) == EmailSignUpResult.SignedIn
     }
+
+    suspend fun resendConfirmationEmail(email: String) {
+        authManager.resendConfirmationEmail(email)
+    }
+
+    suspend fun sendPasswordResetEmail(email: String) {
+        authManager.sendPasswordResetEmail(email)
+    }
 }
 
 @Serializable
