@@ -14,6 +14,8 @@ import io.ktor.http.decodeURLQueryComponent
 import io.ktor.http.encodeURLQueryComponent
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -170,11 +172,16 @@ internal class SupabaseAuthManager(
             append(SUPABASE_AUTH_REDIRECT_URL.encodeURLQueryComponent())
         }
 
-        openUrl(authorizeUrl)
-
-        val callbackUrl = withTimeoutOrNull(180_000L) {
-            SupabaseAuthCallbackBridge.callbackUrls.first { url ->
-                url.startsWith(SUPABASE_AUTH_REDIRECT_URL.substringBefore('?'))
+        val callbackUrl = coroutineScope {
+            SupabaseAuthCallbackBridge.clear()
+            val callbackWaiter = async {
+                SupabaseAuthCallbackBridge.callbackUrl.first { url ->
+                    url?.startsWith(SUPABASE_AUTH_REDIRECT_URL.substringBefore('?')) == true
+                }.orEmpty()
+            }
+            openUrl(authorizeUrl)
+            withTimeoutOrNull(180_000L) {
+                callbackWaiter.await()
             }
         } ?: throw Exception("Google 로그인 시간이 초과되었습니다. 다시 시도해주세요.")
 
@@ -182,6 +189,7 @@ internal class SupabaseAuthManager(
         mutex.withLock {
             sessionStore.save(session)
         }
+        SupabaseAuthCallbackBridge.clear()
     }
 
     private suspend fun refreshSession(refreshToken: String): SupabaseSession {

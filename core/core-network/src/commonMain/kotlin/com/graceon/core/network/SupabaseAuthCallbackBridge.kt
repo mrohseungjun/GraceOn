@@ -1,24 +1,23 @@
 package com.graceon.core.network
 
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 const val SUPABASE_AUTH_REDIRECT_URL = "graceon://auth/callback"
 
 internal object SupabaseAuthCallbackBridge {
-    private val _callbackUrls = MutableSharedFlow<String>(
-        replay = 0,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
+    private val _callbackUrl = MutableStateFlow<String?>(null)
 
-    val callbackUrls: SharedFlow<String> = _callbackUrls
+    val callbackUrl: StateFlow<String?> = _callbackUrl
 
     fun emit(url: String) {
         if (url.isNotBlank()) {
-            _callbackUrls.tryEmit(url)
+            _callbackUrl.value = url
         }
+    }
+
+    fun clear() {
+        _callbackUrl.value = null
     }
 }
 

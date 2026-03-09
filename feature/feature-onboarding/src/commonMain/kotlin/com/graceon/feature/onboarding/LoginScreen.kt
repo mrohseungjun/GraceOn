@@ -61,6 +61,14 @@ private enum class AuthMode {
     SignUp
 }
 
+private enum class AuthLoadingAction {
+    None,
+    EmailSubmit,
+    GoogleSignIn,
+    ResendConfirmation,
+    ResetPassword
+}
+
 @Composable
 fun LoginScreen(
     onSignIn: suspend (String, String) -> Unit,
@@ -74,7 +82,7 @@ fun LoginScreen(
     var mode by rememberSaveable { mutableStateOf(AuthMode.SignIn) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
+    var loadingAction by remember { mutableStateOf(AuthLoadingAction.None) }
 
     fun validateInputs(): String? {
         if (email.isBlank() || "@" !in email) {
@@ -101,7 +109,7 @@ fun LoginScreen(
         }
 
         coroutineScope.launch {
-            isLoading = true
+            loadingAction = AuthLoadingAction.EmailSubmit
             runCatching {
                 when (mode) {
                     AuthMode.SignIn -> {
@@ -120,7 +128,7 @@ fun LoginScreen(
                     throwable.message ?: "로그인 처리에 실패했습니다. 다시 시도해주세요."
                 )
             }
-            isLoading = false
+            loadingAction = AuthLoadingAction.None
         }
     }
 
@@ -158,21 +166,21 @@ fun LoginScreen(
                     mode = mode,
                     email = email,
                     password = password,
-                    isLoading = isLoading,
+                    loadingAction = loadingAction,
                     onChangeMode = { mode = it },
                     onEmailChange = { email = it },
                     onPasswordChange = { password = it },
                     onSubmit = ::submit,
                     onGoogleLogin = {
                         coroutineScope.launch {
-                            isLoading = true
+                            loadingAction = AuthLoadingAction.GoogleSignIn
                             runCatching { onGoogleLogin() }
                                 .onFailure { throwable ->
                                     snackbarHostState.showSnackbar(
                                         throwable.message ?: "Google 로그인에 실패했습니다. 다시 시도해주세요."
                                     )
                                 }
-                            isLoading = false
+                            loadingAction = AuthLoadingAction.None
                         }
                     },
                     onResendConfirmationEmail = {
@@ -182,7 +190,7 @@ fun LoginScreen(
                             return@AuthCard
                         }
                         coroutineScope.launch {
-                            isLoading = true
+                            loadingAction = AuthLoadingAction.ResendConfirmation
                             runCatching {
                                 onResendConfirmationEmail(email.trim())
                                 snackbarHostState.showSnackbar("인증 메일을 다시 보냈습니다. 메일함을 확인해주세요.")
@@ -191,7 +199,7 @@ fun LoginScreen(
                                     throwable.message ?: "인증 메일 재발송에 실패했습니다."
                                 )
                             }
-                            isLoading = false
+                            loadingAction = AuthLoadingAction.None
                         }
                     },
                     onSendPasswordResetEmail = {
@@ -201,7 +209,7 @@ fun LoginScreen(
                             return@AuthCard
                         }
                         coroutineScope.launch {
-                            isLoading = true
+                            loadingAction = AuthLoadingAction.ResetPassword
                             runCatching {
                                 onSendPasswordResetEmail(email.trim())
                                 snackbarHostState.showSnackbar("비밀번호 재설정 메일을 보냈습니다. 메일함을 확인해주세요.")
@@ -210,7 +218,7 @@ fun LoginScreen(
                                     throwable.message ?: "비밀번호 재설정 메일 전송에 실패했습니다."
                                 )
                             }
-                            isLoading = false
+                            loadingAction = AuthLoadingAction.None
                         }
                     }
                 )
@@ -237,7 +245,7 @@ private fun AuthCard(
     mode: AuthMode,
     email: String,
     password: String,
-    isLoading: Boolean,
+    loadingAction: AuthLoadingAction,
     onChangeMode: (AuthMode) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
@@ -246,6 +254,9 @@ private fun AuthCard(
     onResendConfirmationEmail: () -> Unit,
     onSendPasswordResetEmail: () -> Unit
 ) {
+    val isAnyLoading = loadingAction != AuthLoadingAction.None
+    val isEmailSubmitting = loadingAction == AuthLoadingAction.EmailSubmit
+    val isGoogleSigningIn = loadingAction == AuthLoadingAction.GoogleSignIn
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = GlassSurfaceStrong,
@@ -333,14 +344,14 @@ private fun AuthCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = !isLoading,
+                enabled = !isAnyLoading,
                 shape = RoundedCornerShape(999.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
                     contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                if (isLoading) {
+                if (isEmailSubmitting) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
                         strokeWidth = 2.dp,
@@ -360,7 +371,7 @@ private fun AuthCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
-                enabled = !isLoading,
+                enabled = !isAnyLoading,
                 shape = RoundedCornerShape(999.dp),
                 border = androidx.compose.foundation.BorderStroke(
                     1.dp,
@@ -370,7 +381,7 @@ private fun AuthCard(
                     contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
                 )
             ) {
-                if (isLoading) {
+                if (isGoogleSigningIn) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
@@ -385,7 +396,7 @@ private fun AuthCard(
                 }
             }
 
-            if (isLoading) {
+            if (isGoogleSigningIn) {
                 Text(
                     text = "로그인 화면을 여는 중입니다. 브라우저가 열리면 Google 로그인을 완료해주세요.",
                     style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
@@ -402,7 +413,7 @@ private fun AuthCard(
                 ) {
                     TextButton(
                         onClick = onResendConfirmationEmail,
-                        enabled = !isLoading
+                        enabled = !isAnyLoading
                     ) {
                         Text("인증 메일 재발송")
                     }
@@ -414,7 +425,7 @@ private fun AuthCard(
                 ) {
                     TextButton(
                         onClick = onSendPasswordResetEmail,
-                        enabled = !isLoading
+                        enabled = !isAnyLoading
                     ) {
                         Text("비밀번호 재설정")
                     }
