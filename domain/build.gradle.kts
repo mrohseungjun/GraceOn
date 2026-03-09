@@ -22,6 +22,7 @@ kotlin {
             implementation(project(":core:core-common"))
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.datetime)
         }
     }
 }
