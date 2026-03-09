@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -49,6 +50,7 @@ fun ProfileScreen(
     appVersion: String,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
     onToggleDarkTheme: (Boolean) -> Unit,
+    onLogout: () -> Unit,
     onNavigateHome: () -> Unit,
     onNavigateToWord: () -> Unit,
     onNavigateToSaved: () -> Unit
@@ -112,6 +114,19 @@ fun ProfileScreen(
                     description = "현재 설치된 GraceOn 버전 정보입니다.",
                     value = if (appVersion.isBlank()) "1.0" else appVersion,
                     onClick = {}
+                )
+                PreferenceCard(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null,
+                            tint = Primary
+                        )
+                    },
+                    title = "로그아웃",
+                    description = "현재 세션을 종료하고 로그인 화면으로 돌아갑니다.",
+                    value = "",
+                    onClick = onLogout
                 )
             }
 

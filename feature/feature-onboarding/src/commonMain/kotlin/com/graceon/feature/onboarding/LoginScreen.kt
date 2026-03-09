@@ -1,0 +1,449 @@
+package com.graceon.feature.onboarding
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.graceon.core.ui.component.GraceOnAmbientBackground
+import com.graceon.core.ui.theme.GlassBorder
+import com.graceon.core.ui.theme.GlassSurface
+import com.graceon.core.ui.theme.GlassSurfaceStrong
+import com.graceon.core.ui.theme.Primary
+import com.graceon.core.ui.theme.Secondary
+import kotlinx.coroutines.launch
+
+private const val LOGIN_HERO_IMAGE =
+    "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?q=80&w=1200&auto=format&fit=crop"
+
+private enum class AuthMode {
+    SignIn,
+    SignUp
+}
+
+@Composable
+fun LoginScreen(
+    onSignIn: suspend (String, String) -> Unit,
+    onSignUp: suspend (String, String) -> Boolean,
+    onGoogleLogin: suspend () -> Unit
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var mode by rememberSaveable { mutableStateOf(AuthMode.SignIn) }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    fun validateInputs(): String? {
+        if (email.isBlank() || "@" !in email) {
+            return "올바른 이메일 주소를 입력해주세요."
+        }
+        if (password.length < 6) {
+            return "비밀번호는 6자 이상이어야 합니다."
+        }
+        return null
+    }
+
+    fun submit() {
+        val error = validateInputs()
+        if (error != null) {
+            coroutineScope.launch { snackbarHostState.showSnackbar(error) }
+            return
+        }
+
+        coroutineScope.launch {
+            isLoading = true
+            runCatching {
+                when (mode) {
+                    AuthMode.SignIn -> {
+                        onSignIn(email.trim(), password)
+                    }
+
+                    AuthMode.SignUp -> {
+                        val signedIn = onSignUp(email.trim(), password)
+                        if (!signedIn) {
+                            snackbarHostState.showSnackbar("회원가입이 완료되었습니다. 인증 메일을 확인한 뒤 로그인해주세요.")
+                        }
+                    }
+                }
+            }.onFailure { throwable ->
+                snackbarHostState.showSnackbar(
+                    throwable.message ?: "로그인 처리에 실패했습니다. 다시 시도해주세요."
+                )
+            }
+            isLoading = false
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        GraceOnAmbientBackground()
+
+        NetworkHeroImage(
+            url = LOGIN_HERO_IMAGE,
+            contentDescription = "새벽 숲길",
+            modifier = Modifier.fillMaxSize()
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            androidx.compose.material3.MaterialTheme.colorScheme.background.copy(alpha = 0.18f),
+                            androidx.compose.material3.MaterialTheme.colorScheme.background.copy(alpha = 0.74f),
+                            androidx.compose.material3.MaterialTheme.colorScheme.background.copy(alpha = 0.98f)
+                        )
+                    )
+                )
+        )
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(124.dp))
+                AuthCard(
+                    mode = mode,
+                    email = email,
+                    password = password,
+                    isLoading = isLoading,
+                    onChangeMode = { mode = it },
+                    onEmailChange = { email = it },
+                    onPasswordChange = { password = it },
+                    onSubmit = ::submit,
+                    onGoogleLogin = {
+                        coroutineScope.launch {
+                            isLoading = true
+                            runCatching { onGoogleLogin() }
+                                .onFailure { throwable ->
+                                    snackbarHostState.showSnackbar(
+                                        throwable.message ?: "Google 로그인에 실패했습니다. 다시 시도해주세요."
+                                    )
+                                }
+                            isLoading = false
+                        }
+                    }
+                )
+            }
+            item {
+                FeatureHighlights()
+            }
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 20.dp)
+        )
+    }
+}
+
+@Composable
+private fun AuthCard(
+    mode: AuthMode,
+    email: String,
+    password: String,
+    isLoading: Boolean,
+    onChangeMode: (AuthMode) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onGoogleLogin: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassSurfaceStrong,
+        shape = RoundedCornerShape(32.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Surface(
+                color = androidx.compose.material3.MaterialTheme.colorScheme.surface.copy(alpha = 0.20f),
+                shape = RoundedCornerShape(999.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant
+                )
+            ) {
+                Text(
+                    text = "GraceOn",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Text(
+                text = if (mode == AuthMode.SignIn) {
+                    "메일로 로그인하고\n말씀을 이어보세요"
+                } else {
+                    "메일로 가입하고\n무료 횟수를 시작하세요"
+                },
+                style = androidx.compose.material3.MaterialTheme.typography.displaySmall,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 40.sp
+            )
+
+            Text(
+                text = "계정으로 무료 횟수, 저장한 말씀, 이후 구독 상태를 안정적으로 관리합니다.",
+                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 23.sp
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                AuthModeChip(
+                    text = "로그인",
+                    selected = mode == AuthMode.SignIn,
+                    onClick = { onChangeMode(AuthMode.SignIn) },
+                    modifier = Modifier.weight(1f)
+                )
+                AuthModeChip(
+                    text = "회원가입",
+                    selected = mode == AuthMode.SignUp,
+                    onClick = { onChangeMode(AuthMode.SignUp) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = onEmailChange,
+                label = { Text("이메일") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp)
+            )
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = { Text("비밀번호") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp)
+            )
+
+            Button(
+                onClick = onSubmit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = !isLoading,
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        text = if (mode == AuthMode.SignIn) "이메일로 로그인" else "이메일로 회원가입",
+                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            OutlinedButton(
+                onClick = onGoogleLogin,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                enabled = !isLoading,
+                shape = RoundedCornerShape(999.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant
+                ),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+                )
+            ) {
+                Text(
+                    text = "Google로 계속",
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Text(
+                text = if (mode == AuthMode.SignUp) {
+                    "Supabase에서 이메일 인증이 켜져 있으면, 인증 메일 확인 후 다시 로그인해야 합니다."
+                } else {
+                    "로그인 후 하루 무료 횟수와 저장한 말씀이 계정 기준으로 관리됩니다."
+                },
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = Secondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun AuthModeChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = if (selected) Primary.copy(alpha = 0.16f) else GlassSurface,
+        shape = RoundedCornerShape(18.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (selected) Primary.copy(alpha = 0.48f) else GlassBorder
+        ),
+        onClick = onClick
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (selected) Primary else androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+            )
+        }
+    }
+}
+
+@Composable
+private fun FeatureHighlights() {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        HighlightCard(
+            icon = Icons.Default.AutoAwesome,
+            title = "계정 기준 무료 횟수",
+            description = "로그아웃으로 무료 횟수를 초기화하는 우회를 막고, 실제 계정 기준으로 관리합니다."
+        )
+        HighlightCard(
+            icon = Icons.Default.FavoriteBorder,
+            title = "저장한 말씀 유지",
+            description = "다음 로그인에서도 저장한 말씀과 개인화 흐름을 이어갈 수 있습니다."
+        )
+        HighlightCard(
+            icon = Icons.Default.BookmarkBorder,
+            title = "구독 확장 준비",
+            description = "이후 결제와 구독 상태를 계정 기준으로 연결하기 쉬운 구조입니다."
+        )
+    }
+}
+
+@Composable
+private fun HighlightCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassSurface,
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Primary.copy(alpha = 0.14f), RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Primary
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = description,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+            }
+        }
+    }
+}

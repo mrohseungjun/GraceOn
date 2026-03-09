@@ -1,6 +1,6 @@
 package com.graceon
 
-import com.graceon.data.datastore.OnboardingPreferences
+import com.graceon.data.datastore.AuthPreferences
 import com.graceon.data.datastore.NotificationPreferences
 import com.graceon.data.datastore.ThemePreferences
 import com.graceon.domain.usecase.DeletePrescriptionUseCase
@@ -11,7 +11,7 @@ import com.graceon.domain.usecase.GetSavedPrescriptionsUseCase
 import com.graceon.domain.usecase.SavePrescriptionUseCase
 
 internal data class GraceOnDependencies(
-    val onboardingPreferences: OnboardingPreferences,
+    val authPreferences: AuthPreferences,
     val notificationPreferences: NotificationPreferences,
     val themePreferences: ThemePreferences,
     val generatePrescriptionUseCase: GeneratePrescriptionUseCase,
@@ -19,5 +19,9 @@ internal data class GraceOnDependencies(
     val getDailyFreeUsageUseCase: GetDailyFreeUsageUseCase,
     val savePrescriptionUseCase: SavePrescriptionUseCase,
     val getSavedPrescriptionsUseCase: GetSavedPrescriptionsUseCase,
-    val deletePrescriptionUseCase: DeletePrescriptionUseCase
+    val deletePrescriptionUseCase: DeletePrescriptionUseCase,
+    val signInWithEmail: suspend (String, String) -> Unit,
+    val signUpWithEmail: suspend (String, String) -> Boolean,
+    val signInWithGoogle: suspend () -> Unit,
+    val logout: suspend () -> Unit
 )

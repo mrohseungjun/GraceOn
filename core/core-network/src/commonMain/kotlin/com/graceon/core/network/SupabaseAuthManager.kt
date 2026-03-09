@@ -3,17 +3,21 @@ package com.graceon.core.network
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.decodeURLQueryComponent
+import io.ktor.http.encodeURLQueryComponent
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -59,9 +63,58 @@ internal class SupabaseAuthManager(
             sessionStore.clear()
         }
 
-        val session = createAnonymousSession()
-        sessionStore.save(session)
-        session.accessToken
+        throw Exception("로그인이 필요합니다. Google 계정으로 로그인해주세요.")
+    }
+
+    suspend fun signInWithEmail(email: String, password: String) {
+        require(supabaseUrl.isNotBlank()) {
+            "Supabase project URL is missing. Check GRACEON_API_BASE_URL."
+        }
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
+        }
+
+        val response = client.post("$supabaseUrl/auth/v1/token?grant_type=password") {
+            applySupabaseHeaders()
+            setBody(SupabasePasswordLoginRequest(email = email.trim(), password = password))
+        }
+
+        if (!response.status.isSuccess()) {
+            throw createAuthException(response.bodyAsText())
+        }
+
+        mutex.withLock {
+            sessionStore.save(response.body<SupabaseAuthResponse>().toSession())
+        }
+    }
+
+    suspend fun signUpWithEmail(email: String, password: String): EmailSignUpResult {
+        require(supabaseUrl.isNotBlank()) {
+            "Supabase project URL is missing. Check GRACEON_API_BASE_URL."
+        }
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
+        }
+
+        val response = client.post("$supabaseUrl/auth/v1/signup") {
+            applySupabaseHeaders()
+            setBody(SupabaseEmailSignUpRequest(email = email.trim(), password = password))
+        }
+
+        if (!response.status.isSuccess()) {
+            throw createAuthException(response.bodyAsText())
+        }
+
+        val payload = response.body<SupabaseAuthResponse>()
+        val session = runCatching { payload.toSession() }.getOrNull()
+        if (session != null) {
+            mutex.withLock {
+                sessionStore.save(session)
+            }
+            return EmailSignUpResult.SignedIn
+        }
+
+        return EmailSignUpResult.EmailConfirmationRequired
     }
 
     suspend fun resetSession() {
@@ -70,17 +123,33 @@ internal class SupabaseAuthManager(
         }
     }
 
-    private suspend fun createAnonymousSession(): SupabaseSession {
-        val response = client.post("$supabaseUrl/auth/v1/signup") {
-            applySupabaseHeaders()
-            setBody(SupabaseAnonymousSignInRequest(data = mapOf("source" to "graceon")))
+    suspend fun signInWithGoogle(openUrl: (String) -> Unit) {
+        require(supabaseUrl.isNotBlank()) {
+            "Supabase project URL is missing. Check GRACEON_API_BASE_URL."
+        }
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
         }
 
-        if (!response.status.isSuccess()) {
-            throw createAuthException(response.bodyAsText())
+        val authorizeUrl = buildString {
+            append("$supabaseUrl/auth/v1/authorize")
+            append("?provider=google")
+            append("&redirect_to=")
+            append(SUPABASE_AUTH_REDIRECT_URL.encodeURLQueryComponent())
         }
 
-        return response.body<SupabaseAuthResponse>().toSession()
+        openUrl(authorizeUrl)
+
+        val callbackUrl = withTimeoutOrNull(180_000L) {
+            SupabaseAuthCallbackBridge.callbackUrls.first { url ->
+                url.startsWith(SUPABASE_AUTH_REDIRECT_URL.substringBefore('?'))
+            }
+        } ?: throw Exception("Google 로그인 시간이 초과되었습니다. 다시 시도해주세요.")
+
+        val session = parseSessionFromCallbackUrl(callbackUrl)
+        mutex.withLock {
+            sessionStore.save(session)
+        }
     }
 
     private suspend fun refreshSession(refreshToken: String): SupabaseSession {
@@ -102,10 +171,18 @@ internal class SupabaseAuthManager(
         }.getOrNull()
 
         val message = error?.message()
+            ?: error?.errorCode?.let { code ->
+                when (code) {
+                    "email_exists" -> "이미 가입된 이메일입니다. 로그인으로 진행해주세요."
+                    "email_not_confirmed" -> "이메일 인증이 아직 완료되지 않았습니다. 메일함을 확인해주세요."
+                    "invalid_credentials" -> "이메일 또는 비밀번호가 올바르지 않습니다."
+                    else -> null
+                }
+            }
             ?: if ("anonymous_provider_disabled" in rawBody) {
                 "Supabase anonymous sign-ins are disabled. Enable Anonymous provider in Supabase Auth settings."
             } else {
-                "Supabase anonymous authentication failed."
+                "Supabase 인증에 실패했습니다."
             }
 
         return Exception(message)
@@ -129,9 +206,55 @@ internal class SupabaseAuthManager(
         )
     }
 
-    private fun currentEpochSeconds(): Long = Clock.System.now().epochSeconds
+    private fun parseSessionFromCallbackUrl(url: String): SupabaseSession {
+        val params = buildMap {
+            parseKeyValuePairs(url.substringAfter('?', "")).forEach { (key, value) ->
+                put(key, value)
+            }
+            parseKeyValuePairs(url.substringAfter('#', "")).forEach { (key, value) ->
+                put(key, value)
+            }
+        }
 
-    private fun io.ktor.client.request.HttpRequestBuilder.applySupabaseHeaders() {
+        val errorDescription = params["error_description"] ?: params["error"]
+        if (!errorDescription.isNullOrBlank()) {
+            throw Exception(errorDescription)
+        }
+
+        val accessToken = params["access_token"].orEmpty().trim()
+        val refreshToken = params["refresh_token"].orEmpty().trim()
+        val expiresAt = params["expires_at"]?.toLongOrNull()
+            ?: params["expires_in"]?.toLongOrNull()?.let { currentEpochSeconds() + it }
+            ?: currentEpochSeconds() + 3600
+
+        require(accessToken.isNotBlank() && refreshToken.isNotBlank()) {
+            "Supabase OAuth callback is missing session tokens."
+        }
+
+        return SupabaseSession(
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            expiresAtEpochSeconds = expiresAt
+        )
+    }
+
+    private fun parseKeyValuePairs(raw: String): Map<String, String> {
+        if (raw.isBlank()) return emptyMap()
+
+        return raw.split("&")
+            .mapNotNull { entry ->
+                val separatorIndex = entry.indexOf('=')
+                if (separatorIndex <= 0) return@mapNotNull null
+                val key = entry.substring(0, separatorIndex).decodeURLQueryComponent()
+                val value = entry.substring(separatorIndex + 1).decodeURLQueryComponent()
+                key to value
+            }
+            .toMap()
+    }
+
+    private fun currentEpochSeconds(): Long = kotlin.time.Clock.System.now().epochSeconds
+
+    private fun HttpRequestBuilder.applySupabaseHeaders() {
         header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
         header("apikey", supabaseAnonKey)
         header(HttpHeaders.Authorization, "Bearer $supabaseAnonKey")
@@ -150,15 +273,27 @@ data class SupabaseSession(
     val expiresAtEpochSeconds: Long
 )
 
-@Serializable
-private data class SupabaseAnonymousSignInRequest(
-    val data: Map<String, String> = emptyMap()
-)
+internal enum class EmailSignUpResult {
+    SignedIn,
+    EmailConfirmationRequired
+}
 
 @Serializable
 private data class SupabaseRefreshTokenRequest(
     @SerialName("refresh_token")
     val refreshToken: String
+)
+
+@Serializable
+private data class SupabaseEmailSignUpRequest(
+    val email: String,
+    val password: String
+)
+
+@Serializable
+private data class SupabasePasswordLoginRequest(
+    val email: String,
+    val password: String
 )
 
 @Serializable
@@ -176,6 +311,8 @@ private data class SupabaseAuthResponse(
 @Serializable
 private data class SupabaseAuthErrorResponse(
     val error: String? = null,
+    @SerialName("code")
+    val errorCode: String? = null,
     @SerialName("error_description")
     val errorDescription: String? = null,
     val msg: String? = null

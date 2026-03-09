@@ -11,7 +11,8 @@ internal actual fun PlatformAppContent(
     supabaseAnonKey: String,
     appVersion: String,
     onShareText: (String) -> Unit,
-    onToggleDailyVerseNotification: (Boolean) -> Unit
+    onToggleDailyVerseNotification: (Boolean) -> Unit,
+    onOpenUrl: (String) -> Unit
 ) {
     val context = LocalContext.current
     val dependencies = remember(context) {

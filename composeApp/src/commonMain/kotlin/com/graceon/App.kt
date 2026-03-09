@@ -8,14 +8,16 @@ fun App(
     supabaseAnonKey: String = "",
     appVersion: String = "",
     onShareText: (String) -> Unit = {},
-    onToggleDailyVerseNotification: (Boolean) -> Unit = {}
+    onToggleDailyVerseNotification: (Boolean) -> Unit = {},
+    onOpenUrl: (String) -> Unit = {}
 ) {
     PlatformAppContent(
         apiBaseUrl = apiBaseUrl,
         supabaseAnonKey = supabaseAnonKey,
         appVersion = appVersion,
         onShareText = onShareText,
-        onToggleDailyVerseNotification = onToggleDailyVerseNotification
+        onToggleDailyVerseNotification = onToggleDailyVerseNotification,
+        onOpenUrl = onOpenUrl
     )
 }
 
@@ -25,5 +27,6 @@ internal expect fun PlatformAppContent(
     supabaseAnonKey: String,
     appVersion: String,
     onShareText: (String) -> Unit,
-    onToggleDailyVerseNotification: (Boolean) -> Unit
+    onToggleDailyVerseNotification: (Boolean) -> Unit,
+    onOpenUrl: (String) -> Unit
 )

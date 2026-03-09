@@ -3,7 +3,7 @@ package com.graceon
 import com.graceon.core.common.DefaultDispatcherProvider
 import com.graceon.core.network.GraceOnProxyApiClient
 import com.graceon.core.network.IosSupabaseSessionStore
-import com.graceon.data.datastore.OnboardingPreferences
+import com.graceon.data.datastore.AuthPreferences
 import com.graceon.data.datastore.NotificationPreferences
 import com.graceon.data.datastore.ThemePreferences
 import com.graceon.data.repository.PlatformContext
@@ -18,7 +18,8 @@ import com.graceon.domain.usecase.SavePrescriptionUseCase
 
 internal fun createGraceOnIosDependencies(
     apiBaseUrl: String,
-    supabaseAnonKey: String
+    supabaseAnonKey: String,
+    openUrl: (String) -> Unit
 ): GraceOnDependencies {
     val dispatcherProvider = DefaultDispatcherProvider()
     val proxyApiClient = GraceOnProxyApiClient(
@@ -35,7 +36,7 @@ internal fun createGraceOnIosDependencies(
     )
 
     return GraceOnDependencies(
-        onboardingPreferences = OnboardingPreferences(PlatformContext()),
+        authPreferences = AuthPreferences(PlatformContext()),
         notificationPreferences = NotificationPreferences(PlatformContext()),
         themePreferences = ThemePreferences(PlatformContext()),
         generatePrescriptionUseCase = GeneratePrescriptionUseCase(prescriptionRepository),
@@ -43,6 +44,19 @@ internal fun createGraceOnIosDependencies(
         getDailyFreeUsageUseCase = GetDailyFreeUsageUseCase(prescriptionRepository),
         savePrescriptionUseCase = SavePrescriptionUseCase(savedPrescriptionRepository),
         getSavedPrescriptionsUseCase = GetSavedPrescriptionsUseCase(savedPrescriptionRepository),
-        deletePrescriptionUseCase = DeletePrescriptionUseCase(savedPrescriptionRepository)
+        deletePrescriptionUseCase = DeletePrescriptionUseCase(savedPrescriptionRepository),
+        signInWithEmail = { email, password ->
+            proxyApiClient.signInWithEmail(email, password)
+        },
+        signUpWithEmail = { email, password ->
+            proxyApiClient.signUpWithEmail(email, password)
+        },
+        signInWithGoogle = {
+            proxyApiClient.signInWithGoogle(openUrl)
+        },
+        logout = {
+            proxyApiClient.logout()
+            AuthPreferences(PlatformContext()).resetAuthenticated()
+        }
     )
 }

@@ -364,7 +364,7 @@ private fun tipMessage(
 }
 
 private fun GachaContract.State.Stage.progress(): Float = when (this) {
-    GachaContract.State.Stage.Idle -> 0f
+    GachaContract.State.Stage.Idle -> 0.12f
     GachaContract.State.Stage.Shaking -> 0.42f
     GachaContract.State.Stage.Dispensing -> 0.72f
     GachaContract.State.Stage.Opening -> 0.92f

@@ -23,8 +23,8 @@ internal fun GraceOnRoot(
     onShareText: (String) -> Unit = {},
     onToggleDailyVerseNotification: (Boolean) -> Unit = {}
 ) {
-    val isOnboardingCompleted by dependencies.onboardingPreferences
-        .isOnboardingCompleted
+    val isAuthenticated by dependencies.authPreferences
+        .isAuthenticated
         .collectAsState(initial = null)
     val isDailyVerseNotificationEnabled by dependencies.notificationPreferences
         .isDailyVerseNotificationEnabled
@@ -38,7 +38,7 @@ internal fun GraceOnRoot(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            when (isOnboardingCompleted) {
+            when (isAuthenticated) {
                 null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -50,10 +50,10 @@ internal fun GraceOnRoot(
 
                 else -> {
                     val coroutineScope = rememberCoroutineScope()
-                    val startDestination = if (isOnboardingCompleted == true) {
+                    val startDestination = if (isAuthenticated == true) {
                         Screen.WORRY
                     } else {
-                        Screen.ONBOARDING
+                        Screen.LOGIN
                     }
 
                     NavGraph(
@@ -74,9 +74,14 @@ internal fun GraceOnRoot(
                                 dependencies.themePreferences.setDarkThemeEnabled(enabled)
                             }
                         },
-                        onOnboardingComplete = {
+                        onLoginComplete = {
                             coroutineScope.launch {
-                                dependencies.onboardingPreferences.setOnboardingCompleted()
+                                dependencies.authPreferences.setAuthenticated()
+                            }
+                        },
+                        onLogout = {
+                            coroutineScope.launch {
+                                dependencies.logout()
                             }
                         }
                     )

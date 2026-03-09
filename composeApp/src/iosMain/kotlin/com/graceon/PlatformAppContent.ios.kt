@@ -9,12 +9,14 @@ internal actual fun PlatformAppContent(
     supabaseAnonKey: String,
     appVersion: String,
     onShareText: (String) -> Unit,
-    onToggleDailyVerseNotification: (Boolean) -> Unit
+    onToggleDailyVerseNotification: (Boolean) -> Unit,
+    onOpenUrl: (String) -> Unit
 ) {
-    val dependencies = remember(apiBaseUrl, supabaseAnonKey) {
+    val dependencies = remember(apiBaseUrl, supabaseAnonKey, onOpenUrl) {
         createGraceOnIosDependencies(
             apiBaseUrl = apiBaseUrl,
-            supabaseAnonKey = supabaseAnonKey
+            supabaseAnonKey = supabaseAnonKey,
+            openUrl = onOpenUrl
         )
     }
     GraceOnRoot(

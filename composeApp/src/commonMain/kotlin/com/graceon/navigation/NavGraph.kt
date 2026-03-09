@@ -17,7 +17,7 @@ import com.graceon.GraceOnDependencies
 import com.graceon.domain.model.Prescription
 import com.graceon.feature.gacha.GachaScreen
 import com.graceon.feature.gacha.GachaViewModel
-import com.graceon.feature.onboarding.OnboardingScreen
+import com.graceon.feature.onboarding.LoginScreen
 import com.graceon.feature.profile.ProfileScreen
 import com.graceon.feature.result.ResultScreen
 import com.graceon.feature.result.ResultViewModel
@@ -42,7 +42,7 @@ private data class ResultArgs(
 )
 
 private sealed interface NavEntry {
-    data object Onboarding : NavEntry
+    data object Login : NavEntry
     data object Worry : NavEntry
     data class Gacha(val args: WorryArgs) : NavEntry
     data class Result(val args: ResultArgs) : NavEntry
@@ -51,7 +51,7 @@ private sealed interface NavEntry {
 }
 
 internal object Screen {
-    const val ONBOARDING = "onboarding"
+    const val LOGIN = "login"
     const val WORRY = "worry"
     const val GACHA = "gacha"
     const val RESULT = "result"
@@ -68,14 +68,15 @@ private enum class NavigationDirection {
 @Composable
 internal fun NavGraph(
     dependencies: GraceOnDependencies,
-    startDestination: String = Screen.ONBOARDING,
+    startDestination: String = Screen.LOGIN,
     appVersion: String = "",
     onShareText: (String) -> Unit = {},
     isDailyVerseNotificationEnabled: Boolean = false,
     isDarkThemeEnabled: Boolean = true,
     onToggleDailyVerseNotification: (Boolean) -> Unit = {},
     onToggleDarkTheme: (Boolean) -> Unit = {},
-    onOnboardingComplete: () -> Unit = {}
+    onLoginComplete: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val worryViewModel = remember {
         WorryViewModel(
@@ -93,7 +94,7 @@ internal fun NavGraph(
             Screen.WORRY -> NavEntry.Worry
             Screen.SAVED -> NavEntry.Saved
             Screen.PROFILE -> NavEntry.Profile
-            else -> NavEntry.Onboarding
+            else -> NavEntry.Login
         }
     }
     val backStack = remember(initialEntry) { mutableStateListOf(initialEntry) }
@@ -157,10 +158,24 @@ internal fun NavGraph(
         label = "nav_graph_transition"
     ) { entry ->
         when (entry) {
-            NavEntry.Onboarding -> {
-                OnboardingScreen(
-                    onComplete = {
-                        onOnboardingComplete()
+            NavEntry.Login -> {
+                LoginScreen(
+                    onSignIn = { email, password ->
+                        dependencies.signInWithEmail(email, password)
+                        onLoginComplete()
+                        replaceRoot(NavEntry.Worry)
+                    },
+                    onSignUp = { email, password ->
+                        val signedIn = dependencies.signUpWithEmail(email, password)
+                        if (signedIn) {
+                            onLoginComplete()
+                            replaceRoot(NavEntry.Worry)
+                        }
+                        signedIn
+                    },
+                    onGoogleLogin = {
+                        dependencies.signInWithGoogle()
+                        onLoginComplete()
                         replaceRoot(NavEntry.Worry)
                     }
                 )
@@ -256,6 +271,10 @@ internal fun NavGraph(
                     appVersion = appVersion,
                     onToggleDailyVerseNotification = onToggleDailyVerseNotification,
                     onToggleDarkTheme = onToggleDarkTheme,
+                    onLogout = {
+                        replaceRoot(NavEntry.Login)
+                        onLogout()
+                    },
                     onNavigateHome = { replaceRoot(NavEntry.Worry) },
                     onNavigateToWord = {
                         worryViewModel.handleIntent(com.graceon.feature.worry.WorryContract.Intent.StartCategoryMode)

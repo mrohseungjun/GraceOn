@@ -26,6 +26,12 @@ struct ComposeView: UIViewControllerRepresentable {
             },
             onToggleDailyVerseNotification: { enabled in
                 updateDailyVerseNotification(enabled: enabled.boolValue)
+            },
+            onOpenUrl: { rawUrl in
+                guard let url = URL(string: rawUrl) else { return }
+                DispatchQueue.main.async {
+                    UIApplication.shared.open(url)
+                }
             }
         )
 
@@ -112,6 +118,9 @@ struct ContentView: View {
     var body: some View {
         ComposeView()
             .ignoresSafeArea()
+            .onOpenURL { url in
+                SupabaseAuthCallbackBridgeKt.handleSupabaseAuthCallbackUrl(url: url.absoluteString)
+            }
     }
 }
 

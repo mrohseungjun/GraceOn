@@ -7,13 +7,15 @@ fun MainViewController(
     supabaseAnonKey: String,
     appVersion: String,
     onShareText: (String) -> Unit,
-    onToggleDailyVerseNotification: (Boolean) -> Unit
+    onToggleDailyVerseNotification: (Boolean) -> Unit,
+    onOpenUrl: (String) -> Unit
 ) = ComposeUIViewController {
     App(
         apiBaseUrl = apiBaseUrl,
         supabaseAnonKey = supabaseAnonKey,
         appVersion = appVersion,
         onShareText = onShareText,
-        onToggleDailyVerseNotification = onToggleDailyVerseNotification
+        onToggleDailyVerseNotification = onToggleDailyVerseNotification,
+        onOpenUrl = onOpenUrl
     )
 }

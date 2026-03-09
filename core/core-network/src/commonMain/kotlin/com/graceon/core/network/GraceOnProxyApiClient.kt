@@ -123,6 +123,22 @@ class GraceOnProxyApiClient(
     fun close() {
         client.close()
     }
+
+    suspend fun logout() {
+        authManager.resetSession()
+    }
+
+    suspend fun signInWithGoogle(openUrl: (String) -> Unit) {
+        authManager.signInWithGoogle(openUrl)
+    }
+
+    suspend fun signInWithEmail(email: String, password: String) {
+        authManager.signInWithEmail(email, password)
+    }
+
+    suspend fun signUpWithEmail(email: String, password: String): Boolean {
+        return authManager.signUpWithEmail(email, password) == EmailSignUpResult.SignedIn
+    }
 }
 
 @Serializable
