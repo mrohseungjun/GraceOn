@@ -25,4 +25,6 @@ interface PrescriptionRepository {
     ): Result<Prayer>
 
     suspend fun getDailyFreeUsage(): Result<DailyFreeUsage>
+
+    suspend fun grantRewardedCredit(): Result<Unit>
 }

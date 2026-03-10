@@ -379,7 +379,12 @@ private fun DailyUsageCard(
                 text = if (dailyUsage.isLoading) {
                     "남은 횟수를 확인하는 중..."
                 } else {
-                    "${dailyUsage.remainingToday}회 남음 · 총 ${dailyUsage.dailyLimit}회 중 ${dailyUsage.usedToday}회 사용"
+                    buildString {
+                        append("${dailyUsage.remainingToday}회 남음 · 총 ${dailyUsage.dailyLimit}회 중 ${dailyUsage.usedToday}회 사용")
+                        if (dailyUsage.rewardedCredits > 0) {
+                            append(" · 광고 보상 ${dailyUsage.rewardedCredits}회 보유")
+                        }
+                    }
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -388,8 +393,10 @@ private fun DailyUsageCard(
             Text(
                 text = if (dailyUsage.remainingToday > 0) {
                     "오늘은 아직 말씀을 더 받을 수 있어요."
+                } else if (dailyUsage.rewardedAvailableToday > 0) {
+                    "무료 횟수를 모두 사용했습니다. 광고를 보고 추가 1회를 받을 수 있어요."
                 } else {
-                    "오늘 무료 횟수를 모두 사용했습니다. 내일 다시 열립니다."
+                    "오늘 무료 횟수와 광고 보상을 모두 사용했습니다. 내일 다시 열립니다."
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

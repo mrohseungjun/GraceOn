@@ -36,6 +36,7 @@ kotlin {
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.lifecycle.runtime.ktx)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.google.play.services.ads)
 
             implementation(libs.kotlinx.coroutines.android)
         }
@@ -90,8 +91,15 @@ android {
 
         val graceOnApiBaseUrl = localProperties.getProperty("GRACEON_API_BASE_URL") ?: ""
         val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""
+        val admobAppId = localProperties.getProperty("ADMOB_APP_ID")
+            ?: "ca-app-pub-3940256099942544~3347511713"
+        val admobRewardedAdUnitId = localProperties.getProperty("ADMOB_REWARDED_AD_UNIT_ID")
+            ?: "ca-app-pub-3940256099942544/5224354917"
         buildConfigField("String", "GRACEON_API_BASE_URL", "\"$graceOnApiBaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "ADMOB_APP_ID", "\"$admobAppId\"")
+        buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"$admobRewardedAdUnitId\"")
+        manifestPlaceholders["ADMOB_APP_ID"] = admobAppId
     }
 
     buildTypes {

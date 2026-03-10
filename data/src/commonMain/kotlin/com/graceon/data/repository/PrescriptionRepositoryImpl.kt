@@ -107,9 +107,22 @@ class PrescriptionRepositoryImpl(
                     DailyFreeUsage(
                         dailyLimit = status.dailyLimit,
                         usedToday = status.usedToday,
-                        remainingToday = status.remainingToday
+                        remainingToday = status.remainingToday,
+                        rewardedCredits = status.rewardedCredits,
+                        rewardedAvailableToday = status.rewardedAvailableToday
                     )
                 )
+            } catch (e: Exception) {
+                Result.Error(e)
+            }
+        }
+    }
+
+    override suspend fun grantRewardedCredit(): Result<Unit> {
+        return withContext(dispatcherProvider.io) {
+            try {
+                proxyApiClient.grantRewardedCredit()
+                Result.Success(Unit)
             } catch (e: Exception) {
                 Result.Error(e)
             }

@@ -21,11 +21,19 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -33,7 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.Composable
+import com.graceon.core.common.RewardCreditActionResult
 import com.graceon.core.ui.component.GraceOnAmbientBackground
 import com.graceon.core.ui.component.GraceOnBottomBar
 import com.graceon.core.ui.component.GraceOnBottomTab
@@ -42,22 +50,31 @@ import com.graceon.core.ui.theme.GlassBorder
 import com.graceon.core.ui.theme.GlassSurface
 import com.graceon.core.ui.theme.GlassSurfaceStrong
 import com.graceon.core.ui.theme.Primary
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
     isDailyVerseNotificationEnabled: Boolean,
     isDarkThemeEnabled: Boolean,
     appVersion: String,
+    rewardedCredits: Int,
+    rewardedAvailableToday: Int,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
     onToggleDarkTheme: (Boolean) -> Unit,
+    onWatchRewardAd: suspend () -> RewardCreditActionResult,
     onLogout: () -> Unit,
     onNavigateHome: () -> Unit,
     onNavigateToWord: () -> Unit,
     onNavigateToSaved: () -> Unit
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var isRewardLoading by remember { mutableStateOf(false) }
+
     GraceOnScaffold(
         title = "마이",
         onNavigateBack = null,
+        snackbarHostState = snackbarHostState,
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,
@@ -101,6 +118,41 @@ fun ProfileScreen(
                 ThemeCard(
                     isDarkThemeEnabled = isDarkThemeEnabled,
                     onToggleDarkTheme = onToggleDarkTheme
+                )
+                PreferenceCard(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.PlayCircleOutline,
+                            contentDescription = null,
+                            tint = Primary
+                        )
+                    },
+                    title = "광고로 횟수 추가",
+                    description = when {
+                        isRewardLoading -> "광고를 준비하거나 보상을 반영하는 중입니다."
+                        rewardedAvailableToday > 0 -> "리워드 광고를 시청하고 말씀 추가 1회를 받을 수 있습니다."
+                        else -> "오늘은 광고 보상으로 추가 횟수를 모두 받았습니다."
+                    },
+                    value = when {
+                        isRewardLoading -> "처리중"
+                        rewardedAvailableToday > 0 -> "광고 보기"
+                        else -> "완료"
+                    },
+                    enabled = rewardedAvailableToday > 0 && !isRewardLoading,
+                    onClick = {
+                        coroutineScope.launch {
+                            isRewardLoading = true
+                            when (val result = onWatchRewardAd()) {
+                                is RewardCreditActionResult.Success -> {
+                                    snackbarHostState.showSnackbar("광고 보상 1회가 지급되었습니다. 현재 ${result.rewardedCredits}회 보유")
+                                }
+                                is RewardCreditActionResult.Error -> {
+                                    snackbarHostState.showSnackbar(result.message)
+                                }
+                            }
+                            isRewardLoading = false
+                        }
+                    }
                 )
                 PreferenceCard(
                     icon = {
@@ -190,12 +242,13 @@ private fun PreferenceCard(
     title: String,
     description: String,
     value: String,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(enabled = enabled, onClick = onClick),
         color = GlassSurface,
         shape = RoundedCornerShape(26.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
@@ -239,7 +292,7 @@ private fun PreferenceCard(
             Text(
                 text = value,
                 style = MaterialTheme.typography.labelLarge,
-                color = Primary,
+                color = if (enabled) Primary else MaterialTheme.colorScheme.outline,
                 fontWeight = FontWeight.Bold
             )
         }

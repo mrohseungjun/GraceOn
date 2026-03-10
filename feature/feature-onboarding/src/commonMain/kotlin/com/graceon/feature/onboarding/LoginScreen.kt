@@ -224,9 +224,6 @@ fun LoginScreen(
                 )
             }
             item {
-                FeatureHighlights()
-            }
-            item {
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
@@ -477,27 +474,6 @@ private fun AuthModeChip(
                 color = if (selected) Primary else androidx.compose.material3.MaterialTheme.colorScheme.onBackground
             )
         }
-    }
-}
-
-@Composable
-private fun FeatureHighlights() {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        HighlightCard(
-            icon = Icons.Default.AutoAwesome,
-            title = "계정 기준 무료 횟수",
-            description = "로그아웃으로 무료 횟수를 초기화하는 우회를 막고, 실제 계정 기준으로 관리합니다."
-        )
-        HighlightCard(
-            icon = Icons.Default.FavoriteBorder,
-            title = "저장한 말씀 유지",
-            description = "다음 로그인에서도 저장한 말씀과 개인화 흐름을 이어갈 수 있습니다."
-        )
-        HighlightCard(
-            icon = Icons.Default.BookmarkBorder,
-            title = "구독 확장 준비",
-            description = "이후 결제와 구독 상태를 계정 기준으로 연결하기 쉬운 구조입니다."
-        )
     }
 }
 

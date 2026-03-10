@@ -2,6 +2,7 @@ package com.graceon
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import com.graceon.core.common.RewardedAdResult
 
 @Composable
 internal actual fun PlatformAppContent(
@@ -10,7 +11,8 @@ internal actual fun PlatformAppContent(
     appVersion: String,
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
-    onOpenUrl: (String) -> Unit
+    onOpenUrl: (String) -> Unit,
+    onShowRewardedAd: suspend () -> RewardedAdResult
 ) {
     val dependencies = remember(apiBaseUrl, supabaseAnonKey, onOpenUrl) {
         createGraceOnIosDependencies(
@@ -23,6 +25,9 @@ internal actual fun PlatformAppContent(
         dependencies = dependencies,
         appVersion = appVersion,
         onShareText = onShareText,
-        onToggleDailyVerseNotification = onToggleDailyVerseNotification
+        onToggleDailyVerseNotification = onToggleDailyVerseNotification,
+        onShowRewardedAd = {
+            RewardedAdResult.Failed("iOS 리워드 광고는 아직 연결되지 않았습니다.")
+        }
     )
 }

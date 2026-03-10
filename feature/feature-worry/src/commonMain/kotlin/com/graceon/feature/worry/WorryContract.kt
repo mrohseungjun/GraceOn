@@ -11,7 +11,9 @@ object WorryContract {
         val isLoading: Boolean = false,
         val dailyLimit: Int = 1,
         val usedToday: Int = 0,
-        val remainingToday: Int = 1
+        val remainingToday: Int = 1,
+        val rewardedCredits: Int = 0,
+        val rewardedAvailableToday: Int = 0
     )
     
     /**

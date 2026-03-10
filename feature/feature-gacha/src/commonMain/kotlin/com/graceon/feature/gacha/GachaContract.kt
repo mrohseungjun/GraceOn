@@ -25,6 +25,7 @@ object GachaContract {
     sealed interface Intent {
         data object PullLever : Intent
         data object Reset : Intent
+        data object RewardAdCompleted : Intent
     }
     
     sealed interface Effect {
@@ -36,5 +37,6 @@ object GachaContract {
             val isAiMode: Boolean
         ) : Effect
         data class ShowError(val message: String) : Effect
+        data class ShowRewardAdOffer(val message: String) : Effect
     }
 }

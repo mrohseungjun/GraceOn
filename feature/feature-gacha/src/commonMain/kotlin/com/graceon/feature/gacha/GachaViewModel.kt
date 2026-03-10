@@ -2,8 +2,10 @@ package com.graceon.feature.gacha
 
 import com.graceon.core.common.Result
 import com.graceon.core.common.toUserFacingMessage
+import com.graceon.core.network.GraceOnProxyException
 import com.graceon.domain.model.WorryContext
 import com.graceon.domain.usecase.GeneratePrescriptionUseCase
+import com.graceon.domain.usecase.GrantRewardedCreditUseCase
 import com.graceon.feature.gacha.GachaContract
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +24,7 @@ import kotlin.time.TimeSource
  */
 class GachaViewModel(
     private val generatePrescriptionUseCase: GeneratePrescriptionUseCase,
+    private val grantRewardedCreditUseCase: GrantRewardedCreditUseCase,
     private val categoryId: String?,
     private val detailId: String?,
     private val customWorry: String?,
@@ -39,6 +42,7 @@ class GachaViewModel(
         when (intent) {
             is GachaContract.Intent.PullLever -> pullLever()
             is GachaContract.Intent.Reset -> reset()
+            is GachaContract.Intent.RewardAdCompleted -> consumeRewardAndRetry()
         }
     }
 
@@ -102,11 +106,20 @@ class GachaViewModel(
                         isLoading = false,
                         error = result.exception.message
                     )
-                    _effect.send(
-                        GachaContract.Effect.ShowError(
-                            result.exception.toUserFacingMessage("말씀을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.")
+                    val proxyError = result.exception as? GraceOnProxyException
+                    if (proxyError?.statusCode == 429 && proxyError.rewardedEligible) {
+                        _effect.send(
+                            GachaContract.Effect.ShowRewardAdOffer(
+                                "오늘 무료 말씀 1회를 모두 사용했습니다. 광고를 보고 추가 1회를 받을 수 있습니다."
+                            )
                         )
-                    )
+                    } else {
+                        _effect.send(
+                            GachaContract.Effect.ShowError(
+                                result.exception.toUserFacingMessage("말씀을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.")
+                            )
+                        )
+                    }
                 }
                 is Result.Loading -> {
                     // Should not happen
@@ -117,5 +130,28 @@ class GachaViewModel(
 
     private fun reset() {
         _state.value = GachaContract.State()
+    }
+
+    private fun consumeRewardAndRetry() {
+        if (_state.value.isLoading) return
+
+        scope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            when (val result = grantRewardedCreditUseCase()) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(isLoading = false)
+                    pullLever()
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(isLoading = false)
+                    _effect.send(
+                        GachaContract.Effect.ShowError(
+                            result.exception.toUserFacingMessage("광고 보상을 반영하지 못했습니다. 잠시 후 다시 시도해주세요.")
+                        )
+                    )
+                }
+                Result.Loading -> Unit
+            }
+        }
     }
 }

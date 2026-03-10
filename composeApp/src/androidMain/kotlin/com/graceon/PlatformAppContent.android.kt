@@ -1,9 +1,12 @@
 package com.graceon
 
 import android.content.Intent
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import com.graceon.ads.AndroidRewardedAdManager
+import com.graceon.core.common.RewardedAdResult
 
 @Composable
 internal actual fun PlatformAppContent(
@@ -12,7 +15,8 @@ internal actual fun PlatformAppContent(
     appVersion: String,
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
-    onOpenUrl: (String) -> Unit
+    onOpenUrl: (String) -> Unit,
+    onShowRewardedAd: suspend () -> RewardedAdResult
 ) {
     val context = LocalContext.current
     val dependencies = remember(context) {
@@ -21,6 +25,10 @@ internal actual fun PlatformAppContent(
             apiBaseUrl = apiBaseUrl.ifBlank { BuildConfig.GRACEON_API_BASE_URL },
             supabaseAnonKey = supabaseAnonKey.ifBlank { BuildConfig.SUPABASE_ANON_KEY }
         )
+    }
+
+    LaunchedEffect(context) {
+        AndroidRewardedAdManager.preload(context)
     }
 
     GraceOnRoot(
@@ -40,6 +48,9 @@ internal actual fun PlatformAppContent(
                 context = context,
                 enabled = enabled
             )
+        },
+        onShowRewardedAd = {
+            AndroidRewardedAdManager.show(context)
         }
     )
 }

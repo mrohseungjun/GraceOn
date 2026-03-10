@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.graceon.core.common.RewardedAdResult
 import com.graceon.core.ui.theme.GraceOnTheme
 import com.graceon.navigation.NavGraph
 import com.graceon.navigation.Screen
@@ -21,7 +22,8 @@ internal fun GraceOnRoot(
     dependencies: GraceOnDependencies,
     appVersion: String,
     onShareText: (String) -> Unit = {},
-    onToggleDailyVerseNotification: (Boolean) -> Unit = {}
+    onToggleDailyVerseNotification: (Boolean) -> Unit = {},
+    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") }
 ) {
     val isAuthenticated by dependencies.authPreferences
         .isAuthenticated
@@ -83,7 +85,8 @@ internal fun GraceOnRoot(
                             coroutineScope.launch {
                                 dependencies.logout()
                             }
-                        }
+                        },
+                        onShowRewardedAd = onShowRewardedAd
                     )
                 }
             }

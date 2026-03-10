@@ -23,8 +23,10 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,6 +35,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -42,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.graceon.core.common.RewardedAdResult
 import com.graceon.core.ui.component.GraceOnAmbientBackground
 import com.graceon.core.ui.component.GraceOnScaffold
 import com.graceon.core.ui.theme.GlassBorder
@@ -49,15 +55,19 @@ import com.graceon.core.ui.theme.GlassSurfaceStrong
 import com.graceon.core.ui.theme.Primary
 import com.graceon.core.ui.theme.Tertiary
 import com.graceon.domain.model.Prescription
+import kotlinx.coroutines.launch
 
 @Composable
 fun GachaScreen(
     viewModel: GachaViewModel,
     onNavigateBack: () -> Unit,
+    onShowRewardedAd: suspend () -> RewardedAdResult,
     onNavigateToResult: (Prescription, String?, String?, String?, Boolean) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var rewardOfferMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.handleIntent(GachaContract.Intent.PullLever)
@@ -76,6 +86,7 @@ fun GachaScreen(
                     )
                 }
                 is GachaContract.Effect.ShowError -> snackbarHostState.showSnackbar(effect.message)
+                is GachaContract.Effect.ShowRewardAdOffer -> rewardOfferMessage = effect.message
             }
         }
     }
@@ -174,6 +185,41 @@ fun GachaScreen(
                     }
                 }
             }
+        }
+
+        rewardOfferMessage?.let { message ->
+            AlertDialog(
+                onDismissRequest = { rewardOfferMessage = null },
+                title = { Text("광고 보고 1회 더 받기") },
+                text = { Text(message) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            rewardOfferMessage = null
+                            coroutineScope.launch {
+                                when (val result = onShowRewardedAd()) {
+                                    RewardedAdResult.RewardEarned -> {
+                                        viewModel.handleIntent(GachaContract.Intent.RewardAdCompleted)
+                                    }
+                                    RewardedAdResult.Dismissed -> {
+                                        snackbarHostState.showSnackbar("광고 시청이 완료되지 않아 추가 횟수가 지급되지 않았습니다.")
+                                    }
+                                    is RewardedAdResult.Failed -> {
+                                        snackbarHostState.showSnackbar(result.message)
+                                    }
+                                }
+                            }
+                        }
+                    ) {
+                        Text("광고 보기")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { rewardOfferMessage = null }) {
+                        Text("닫기")
+                    }
+                }
+            )
         }
     }
 }

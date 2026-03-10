@@ -179,7 +179,9 @@ class WorryViewModel(
                             isLoading = false,
                             dailyLimit = result.data.dailyLimit,
                             usedToday = result.data.usedToday,
-                            remainingToday = result.data.remainingToday
+                            remainingToday = result.data.remainingToday,
+                            rewardedCredits = result.data.rewardedCredits,
+                            rewardedAvailableToday = result.data.rewardedAvailableToday
                         )
                     )
                 }

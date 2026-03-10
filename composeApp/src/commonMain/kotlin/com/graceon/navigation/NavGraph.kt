@@ -8,12 +8,17 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.graceon.GraceOnDependencies
+import com.graceon.core.common.RewardCreditActionResult
+import com.graceon.core.common.Result
+import com.graceon.core.common.RewardedAdResult
+import com.graceon.core.common.toUserFacingMessage
 import com.graceon.domain.model.Prescription
 import com.graceon.feature.gacha.GachaScreen
 import com.graceon.feature.gacha.GachaViewModel
@@ -76,7 +81,8 @@ internal fun NavGraph(
     onToggleDailyVerseNotification: (Boolean) -> Unit = {},
     onToggleDarkTheme: (Boolean) -> Unit = {},
     onLoginComplete: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") }
 ) {
     val worryViewModel = remember {
         WorryViewModel(
@@ -88,6 +94,18 @@ internal fun NavGraph(
             getSavedPrescriptionsUseCase = dependencies.getSavedPrescriptionsUseCase,
             deletePrescriptionUseCase = dependencies.deletePrescriptionUseCase
         )
+    }
+    var profileRewardedCredits by remember { mutableStateOf(0) }
+    var profileRewardedAvailableToday by remember { mutableStateOf(0) }
+
+    suspend fun refreshProfileRewardUsage() {
+        when (val result = dependencies.getDailyFreeUsageUseCase()) {
+            is Result.Success -> {
+                profileRewardedCredits = result.data.rewardedCredits
+                profileRewardedAvailableToday = result.data.rewardedAvailableToday
+            }
+            else -> Unit
+        }
     }
     val initialEntry = remember(startDestination) {
         when (startDestination) {
@@ -207,6 +225,7 @@ internal fun NavGraph(
                 val viewModel = remember(entry.args) {
                     GachaViewModel(
                         generatePrescriptionUseCase = dependencies.generatePrescriptionUseCase,
+                        grantRewardedCreditUseCase = dependencies.grantRewardedCreditUseCase,
                         categoryId = entry.args.categoryId,
                         detailId = entry.args.detailId,
                         customWorry = entry.args.customWorry,
@@ -217,6 +236,7 @@ internal fun NavGraph(
                 GachaScreen(
                     viewModel = viewModel,
                     onNavigateBack = ::popBackStack,
+                    onShowRewardedAd = onShowRewardedAd,
                     onNavigateToResult = { prescription, categoryId, detailId, customWorry, isAiMode ->
                         navigate(
                             NavEntry.Result(
@@ -271,12 +291,45 @@ internal fun NavGraph(
             }
 
             NavEntry.Profile -> {
+                LaunchedEffect(Unit) {
+                    refreshProfileRewardUsage()
+                }
+
                 ProfileScreen(
                     isDailyVerseNotificationEnabled = isDailyVerseNotificationEnabled,
                     isDarkThemeEnabled = isDarkThemeEnabled,
                     appVersion = appVersion,
+                    rewardedCredits = profileRewardedCredits,
+                    rewardedAvailableToday = profileRewardedAvailableToday,
                     onToggleDailyVerseNotification = onToggleDailyVerseNotification,
                     onToggleDarkTheme = onToggleDarkTheme,
+                    onWatchRewardAd = {
+                        when (val adResult = onShowRewardedAd()) {
+                            RewardedAdResult.RewardEarned -> {
+                                when (val grantResult = dependencies.grantRewardedCreditUseCase()) {
+                                    is Result.Success -> {
+                                        refreshProfileRewardUsage()
+                                        RewardCreditActionResult.Success(
+                                            rewardedCredits = profileRewardedCredits,
+                                            rewardedAvailableToday = profileRewardedAvailableToday
+                                        )
+                                    }
+                                    is Result.Error -> {
+                                        RewardCreditActionResult.Error(
+                                            grantResult.exception.toUserFacingMessage("광고 보상을 반영하지 못했습니다. 잠시 후 다시 시도해주세요.")
+                                        )
+                                    }
+                                    Result.Loading -> RewardCreditActionResult.Error("광고 보상을 처리하는 중입니다.")
+                                }
+                            }
+                            RewardedAdResult.Dismissed -> {
+                                RewardCreditActionResult.Error("광고 시청이 완료되지 않아 추가 횟수가 지급되지 않았습니다.")
+                            }
+                            is RewardedAdResult.Failed -> {
+                                RewardCreditActionResult.Error(adResult.message)
+                            }
+                        }
+                    },
                     onLogout = {
                         replaceRoot(NavEntry.Login)
                         onLogout()

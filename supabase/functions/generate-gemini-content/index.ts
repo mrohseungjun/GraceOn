@@ -7,18 +7,25 @@ const corsHeaders = {
 }
 
 const DAILY_LIMIT = 1
+const MAX_REWARDED_GRANTS_PER_DAY = 1
 const DAILY_USAGE_DATE_KEY = "graceon_daily_free_generation_date"
 const DAILY_USAGE_COUNT_KEY = "graceon_daily_free_generation_count"
+const REWARDED_USAGE_DATE_KEY = "graceon_rewarded_generation_date"
+const REWARDED_GRANT_COUNT_KEY = "graceon_rewarded_generation_grant_count"
+const REWARDED_CREDIT_COUNT_KEY = "graceon_rewarded_generation_credit_count"
 const DAILY_USAGE_TIMEZONE = "Asia/Seoul"
 
 interface GenerateContentRequest {
   prompt?: string
+  action?: "grant_reward"
 }
 
 interface DailyUsageStatusResponse {
   dailyLimit: number
   usedToday: number
   remainingToday: number
+  rewardedCredits: number
+  rewardedAvailableToday: number
 }
 
 interface GeminiGenerateResponse {
@@ -97,17 +104,12 @@ Deno.serve(async (request) => {
     return Response.json(
       {
         dailyLimit: DAILY_LIMIT,
-        usedToday: usage.usedToday,
-        remainingToday: usage.remainingToday,
+        usedToday: usage.freeUsedToday,
+        remainingToday: usage.remainingFreeToday,
+        rewardedCredits: usage.rewardedCredits,
+        rewardedAvailableToday: usage.rewardedAvailableToday,
       } satisfies DailyUsageStatusResponse,
       { status: 200, headers: corsHeaders },
-    )
-  }
-
-  if (usage.usedToday >= DAILY_LIMIT) {
-    return Response.json(
-      { error: "오늘 무료 말씀 1회를 모두 사용했습니다. 내일 다시 시도해주세요." },
-      { status: 429, headers: corsHeaders },
     )
   }
 
@@ -121,6 +123,49 @@ Deno.serve(async (request) => {
     )
   }
 
+  if (body.action === "grant_reward") {
+    if (usage.rewardedAvailableToday <= 0) {
+      return Response.json(
+        {
+          error: "오늘은 광고 보상으로 받을 수 있는 추가 횟수를 모두 사용했습니다.",
+          rewardedEligible: false,
+        },
+        { status: 429, headers: corsHeaders },
+      )
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey)
+    const rewardedMetadata = {
+      ...currentUserMetadata,
+      [REWARDED_USAGE_DATE_KEY]: todayInKorea(),
+      [REWARDED_GRANT_COUNT_KEY]: usage.rewardedGrantedToday + 1,
+      [REWARDED_CREDIT_COUNT_KEY]: usage.rewardedCredits + 1,
+    }
+
+    const { error: rewardGrantError } = await adminClient.auth.admin.updateUserById(user.id, {
+      user_metadata: rewardedMetadata,
+    })
+
+    if (rewardGrantError) {
+      console.error("Failed to grant rewarded credit", rewardGrantError)
+      return Response.json(
+        { error: "광고 보상을 반영하지 못했습니다. 잠시 후 다시 시도해주세요." },
+        { status: 500, headers: corsHeaders },
+      )
+    }
+
+    return Response.json(
+      {
+        dailyLimit: DAILY_LIMIT,
+        usedToday: usage.freeUsedToday,
+        remainingToday: usage.remainingFreeToday,
+        rewardedCredits: usage.rewardedCredits + 1,
+        rewardedAvailableToday: usage.rewardedAvailableToday - 1,
+      } satisfies DailyUsageStatusResponse,
+      { status: 200, headers: corsHeaders },
+    )
+  }
+
   const prompt = body.prompt?.trim()
   if (!prompt) {
     return Response.json(
@@ -129,12 +174,29 @@ Deno.serve(async (request) => {
     )
   }
 
-  const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey)
-  const reservedMetadata = {
-    ...currentUserMetadata,
-    [DAILY_USAGE_DATE_KEY]: todayInKorea(),
-    [DAILY_USAGE_COUNT_KEY]: usage.usedToday + 1,
+  if (usage.remainingFreeToday <= 0 && usage.rewardedCredits <= 0) {
+    return Response.json(
+      {
+        error: "오늘 무료 말씀 1회를 모두 사용했습니다. 광고를 보고 추가 1회를 받을 수 있습니다.",
+        rewardedEligible: usage.rewardedAvailableToday > 0,
+      },
+      { status: 429, headers: corsHeaders },
+    )
   }
+
+  const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey)
+  const reservedMetadata =
+    usage.remainingFreeToday > 0
+      ? {
+          ...currentUserMetadata,
+          [DAILY_USAGE_DATE_KEY]: todayInKorea(),
+          [DAILY_USAGE_COUNT_KEY]: usage.freeUsedToday + 1,
+        }
+      : {
+          ...currentUserMetadata,
+          [REWARDED_USAGE_DATE_KEY]: todayInKorea(),
+          [REWARDED_CREDIT_COUNT_KEY]: Math.max(usage.rewardedCredits - 1, 0),
+        }
 
   const { error: reserveUsageError } = await adminClient.auth.admin.updateUserById(user.id, {
     user_metadata: reservedMetadata,
@@ -195,14 +257,27 @@ Deno.serve(async (request) => {
 })
 
 function resolveDailyUsage(userMetadata: Record<string, unknown>) {
-  const usageDate = String(userMetadata[DAILY_USAGE_DATE_KEY] ?? "")
-  const usedToday =
-    usageDate === todayInKorea()
+  const today = todayInKorea()
+  const freeUsageDate = String(userMetadata[DAILY_USAGE_DATE_KEY] ?? "")
+  const rewardedUsageDate = String(userMetadata[REWARDED_USAGE_DATE_KEY] ?? "")
+  const freeUsedToday =
+    freeUsageDate === today
       ? Number(userMetadata[DAILY_USAGE_COUNT_KEY] ?? 0)
+      : 0
+  const rewardedGrantedToday =
+    rewardedUsageDate === today
+      ? Number(userMetadata[REWARDED_GRANT_COUNT_KEY] ?? 0)
+      : 0
+  const rewardedCredits =
+    rewardedUsageDate === today
+      ? Number(userMetadata[REWARDED_CREDIT_COUNT_KEY] ?? 0)
       : 0
 
   return {
-    usedToday,
-    remainingToday: Math.max(DAILY_LIMIT - usedToday, 0),
+    freeUsedToday,
+    remainingFreeToday: Math.max(DAILY_LIMIT - freeUsedToday, 0),
+    rewardedGrantedToday,
+    rewardedCredits,
+    rewardedAvailableToday: Math.max(MAX_REWARDED_GRANTS_PER_DAY - rewardedGrantedToday, 0),
   }
 }

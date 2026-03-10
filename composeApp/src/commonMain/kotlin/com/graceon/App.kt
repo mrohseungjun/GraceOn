@@ -1,6 +1,7 @@
 package com.graceon
 
 import androidx.compose.runtime.Composable
+import com.graceon.core.common.RewardedAdResult
 
 @Composable
 fun App(
@@ -9,7 +10,8 @@ fun App(
     appVersion: String = "",
     onShareText: (String) -> Unit = {},
     onToggleDailyVerseNotification: (Boolean) -> Unit = {},
-    onOpenUrl: (String) -> Unit = {}
+    onOpenUrl: (String) -> Unit = {},
+    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") }
 ) {
     PlatformAppContent(
         apiBaseUrl = apiBaseUrl,
@@ -17,7 +19,8 @@ fun App(
         appVersion = appVersion,
         onShareText = onShareText,
         onToggleDailyVerseNotification = onToggleDailyVerseNotification,
-        onOpenUrl = onOpenUrl
+        onOpenUrl = onOpenUrl,
+        onShowRewardedAd = onShowRewardedAd
     )
 }
 
@@ -28,5 +31,6 @@ internal expect fun PlatformAppContent(
     appVersion: String,
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
-    onOpenUrl: (String) -> Unit
+    onOpenUrl: (String) -> Unit,
+    onShowRewardedAd: suspend () -> RewardedAdResult
 )

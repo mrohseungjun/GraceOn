@@ -78,7 +78,8 @@ class GraceOnProxyApiClient(
             val errorPayload = runCatching { response.body<ProxyErrorResponse>() }.getOrNull()
             throw GraceOnProxyException(
                 message = errorPayload?.error ?: "GraceOn proxy request failed",
-                statusCode = response.status.value
+                statusCode = response.status.value,
+                rewardedEligible = errorPayload?.rewardedEligible ?: false
             )
         }
 
@@ -118,6 +119,39 @@ class GraceOnProxyApiClient(
         }
 
         return response.body()
+    }
+
+    suspend fun grantRewardedCredit() {
+        require(baseUrl.isNotBlank()) {
+            "GraceOn proxy URL is missing. Configure GRACEON_API_BASE_URL for this platform."
+        }
+
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
+        }
+
+        suspend fun performRequest(accessToken: String) = client.post(baseUrl) {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("apikey", supabaseAnonKey)
+            header(HttpHeaders.Authorization, "Bearer $accessToken")
+            setBody(ProxyRewardGrantRequest(action = "grant_reward"))
+        }
+
+        var response = performRequest(authManager.getAccessToken())
+
+        if (response.status.value == 401) {
+            authManager.resetSession()
+            response = performRequest(authManager.getAccessToken())
+        }
+
+        if (!response.status.isSuccess()) {
+            val errorPayload = runCatching { response.body<ProxyErrorResponse>() }.getOrNull()
+            throw GraceOnProxyException(
+                message = errorPayload?.error ?: "GraceOn proxy reward request failed",
+                statusCode = response.status.value,
+                rewardedEligible = errorPayload?.rewardedEligible ?: false
+            )
+        }
     }
 
     fun close() {
@@ -163,15 +197,24 @@ private data class ProxyGenerateResponse(
 data class DailyFreeUsageStatus(
     val dailyLimit: Int,
     val usedToday: Int,
-    val remainingToday: Int
+    val remainingToday: Int,
+    val rewardedCredits: Int = 0,
+    val rewardedAvailableToday: Int = 0
 )
 
 @Serializable
 private data class ProxyErrorResponse(
-    val error: String? = null
+    val error: String? = null,
+    val rewardedEligible: Boolean? = null
+)
+
+@Serializable
+private data class ProxyRewardGrantRequest(
+    val action: String
 )
 
 class GraceOnProxyException(
     message: String,
-    val statusCode: Int
+    val statusCode: Int,
+    val rewardedEligible: Boolean = false
 ) : Exception(message)
