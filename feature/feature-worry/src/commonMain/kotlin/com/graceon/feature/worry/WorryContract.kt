@@ -2,6 +2,7 @@ package com.graceon.feature.worry
 
 import com.graceon.domain.model.Category
 import com.graceon.domain.model.DetailWorry
+import com.graceon.domain.model.SavedPrescription
 
 /**
  * MVI Contract for Worry Selection Feature
@@ -26,7 +27,8 @@ object WorryContract {
         val selectedDetail: DetailWorry? = null,
         val customWorry: String = "",
         val isAiMode: Boolean = false,
-        val dailyUsage: DailyUsageUiState = DailyUsageUiState()
+        val dailyUsage: DailyUsageUiState = DailyUsageUiState(),
+        val recentSavedPrescription: SavedPrescription? = null
     ) {
         enum class Step {
             Intro,

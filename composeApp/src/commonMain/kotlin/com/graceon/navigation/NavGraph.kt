@@ -84,7 +84,8 @@ internal fun NavGraph(
 ) {
     val worryViewModel = remember {
         WorryViewModel(
-            getDailyFreeUsageUseCase = dependencies.getDailyFreeUsageUseCase
+            getDailyFreeUsageUseCase = dependencies.getDailyFreeUsageUseCase,
+            getSavedPrescriptionsUseCase = dependencies.getSavedPrescriptionsUseCase
         )
     }
     val savedViewModel = remember {

@@ -23,7 +23,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,6 +84,7 @@ import com.graceon.domain.model.Category
 import com.graceon.domain.model.ColorType
 import com.graceon.domain.model.DetailWorry
 import com.graceon.domain.model.IconType
+import com.graceon.domain.model.SavedPrescription
 
 @Composable
 fun WorryScreen(
@@ -208,6 +211,7 @@ private fun AnimatedWorryContent(
             WorryContract.State.Step.Intro -> IntroStep(
                 categories = state.categories,
                 dailyUsage = state.dailyUsage,
+                recentSavedPrescription = state.recentSavedPrescription,
                 onStartCategoryMode = onStartCategoryMode,
                 onStartAiMode = onStartAiMode,
                 onSelectCategory = onSelectCategory,
@@ -234,6 +238,7 @@ private fun AnimatedWorryContent(
 private fun IntroStep(
     categories: List<Category>,
     dailyUsage: WorryContract.DailyUsageUiState,
+    recentSavedPrescription: SavedPrescription?,
     onStartCategoryMode: () -> Unit,
     onStartAiMode: () -> Unit,
     onSelectCategory: (Category) -> Unit,
@@ -277,25 +282,10 @@ private fun IntroStep(
         }
 
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "상황별 맞춤 위로 찾기",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "지금 마음과 가장 가까운 고민을 바로 선택해보세요.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        item {
-            CategoryCardGrid(
-                categories = categories,
-                onSelectCategory = onSelectCategory
+            HeroModeCard(
+                title = "오늘 내게 주시는 말씀",
+                description = "복잡한 고민 없이, 지금 당신에게 가장 필요한 위로를 바로 받아보세요.",
+                onClick = onStartAiMode
             )
         }
 
@@ -304,11 +294,27 @@ private fun IntroStep(
         }
 
         item {
-            HeroModeCard(
-                title = "오늘 내게 주시는 말씀",
-                description = "고민 선택 없이, 지금 당신에게 필요한 위로를 바로 받아보세요.",
-                onClick = onStartAiMode
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "상황별 고민 카테고리",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    TextButton(onClick = onStartCategoryMode) {
+                        Text("전체보기", color = Primary)
+                    }
+                }
+                CategoryCarousel(
+                    categories = categories,
+                    onSelectCategory = onSelectCategory
+                )
+            }
         }
 
         item {
@@ -338,10 +344,13 @@ private fun IntroStep(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "마음에 남는 말씀을 다시 꺼내보고 기도문도 확인하세요.",
+                            text = recentSavedPrescription?.verse?.let { "\"$it\"" }
+                                ?: "아직 저장한 말씀이 없습니다.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 20.sp
+                            lineHeight = 20.sp,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     Icon(
@@ -349,6 +358,70 @@ private fun IntroStep(
                         contentDescription = null,
                         tint = Primary
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryCarousel(
+    categories: List<Category>,
+    onSelectCategory: (Category) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 2.dp)
+    ) {
+        items(categories) { category ->
+            val palette = category.colorType.palette()
+            Surface(
+                modifier = Modifier
+                    .width(170.dp)
+                    .height(124.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .clickable { onSelectCategory(category) },
+                color = palette.container,
+                shape = RoundedCornerShape(24.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, palette.border)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(palette.accent.copy(alpha = 0.18f), RoundedCornerShape(14.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = category.iconType.toIcon(),
+                            contentDescription = null,
+                            tint = palette.accent
+                        )
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = category.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = category.description ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 18.sp
+                        )
+                    }
                 }
             }
         }
