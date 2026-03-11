@@ -62,6 +62,9 @@ internal fun createGraceOnIosDependencies(
         signInWithGoogle = {
             proxyApiClient.signInWithGoogle(openUrl)
         },
+        getCurrentUserEmail = {
+            proxyApiClient.getCurrentUserEmail()
+        },
         logout = {
             proxyApiClient.logout()
             AuthPreferences(PlatformContext()).resetAuthenticated()

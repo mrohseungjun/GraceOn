@@ -26,8 +26,6 @@ internal actual fun PlatformAppContent(
         appVersion = appVersion,
         onShareText = onShareText,
         onToggleDailyVerseNotification = onToggleDailyVerseNotification,
-        onShowRewardedAd = {
-            RewardedAdResult.Failed("iOS 리워드 광고는 아직 연결되지 않았습니다.")
-        }
+        onShowRewardedAd = onShowRewardedAd
     )
 }

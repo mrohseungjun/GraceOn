@@ -14,6 +14,8 @@ import io.ktor.http.decodeURLQueryComponent
 import io.ktor.http.encodeURLQueryComponent
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
@@ -157,6 +159,8 @@ internal class SupabaseAuthManager(
         }
     }
 
+    fun getCurrentUserEmail(): String? = sessionStore.load()?.email
+
     suspend fun signInWithGoogle(openUrl: (String) -> Unit) {
         require(supabaseUrl.isNotBlank()) {
             "Supabase project URL is missing. Check GRACEON_API_BASE_URL."
@@ -269,7 +273,8 @@ internal class SupabaseAuthManager(
         return SupabaseSession(
             accessToken = accessToken,
             refreshToken = refreshToken,
-            expiresAtEpochSeconds = expiresAtEpochSeconds
+            expiresAtEpochSeconds = expiresAtEpochSeconds,
+            email = parseEmailFromJwt(accessToken)
         )
     }
 
@@ -301,7 +306,8 @@ internal class SupabaseAuthManager(
         return SupabaseSession(
             accessToken = accessToken,
             refreshToken = refreshToken,
-            expiresAtEpochSeconds = expiresAt
+            expiresAtEpochSeconds = expiresAt,
+            email = parseEmailFromJwt(accessToken)
         )
     }
 
@@ -321,6 +327,18 @@ internal class SupabaseAuthManager(
 
     private fun currentEpochSeconds(): Long = kotlin.time.Clock.System.now().epochSeconds
 
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun parseEmailFromJwt(accessToken: String): String? {
+        val payload = accessToken.split('.').getOrNull(1) ?: return null
+        val decoded = runCatching {
+            Base64.UrlSafe.decode(payload).decodeToString()
+        }.getOrNull() ?: return null
+
+        return runCatching {
+            json.decodeFromString<SupabaseJwtPayload>(decoded).email
+        }.getOrNull()
+    }
+
     private fun HttpRequestBuilder.applySupabaseHeaders() {
         header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
         header("apikey", supabaseAnonKey)
@@ -337,7 +355,8 @@ interface SupabaseSessionStore {
 data class SupabaseSession(
     val accessToken: String,
     val refreshToken: String,
-    val expiresAtEpochSeconds: Long
+    val expiresAtEpochSeconds: Long,
+    val email: String? = null
 )
 
 internal enum class EmailSignUpResult {
@@ -386,6 +405,11 @@ private data class SupabaseAuthResponse(
     val expiresAt: Long? = null,
     @SerialName("expires_in")
     val expiresIn: Long? = null
+)
+
+@Serializable
+private data class SupabaseJwtPayload(
+    val email: String? = null
 )
 
 @Serializable

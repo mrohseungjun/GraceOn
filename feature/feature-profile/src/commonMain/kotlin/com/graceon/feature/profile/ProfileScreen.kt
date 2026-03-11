@@ -36,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +55,10 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
+    currentUserEmail: String?,
+    remainingCount: Int,
+    dailyLimit: Int,
+    usedToday: Int,
     isDailyVerseNotificationEnabled: Boolean,
     isDarkThemeEnabled: Boolean,
     appVersion: String,
@@ -97,7 +102,39 @@ fun ProfileScreen(
                     .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                ProfileHeroCard()
+                ProfileHeroCard(currentUserEmail = currentUserEmail)
+                UsageSummaryCard(
+                    remainingCount = remainingCount,
+                    dailyLimit = dailyLimit,
+                    usedToday = usedToday
+                )
+                PreferenceCard(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.BookmarkBorder,
+                            contentDescription = null,
+                            tint = Primary
+                        )
+                    },
+                    title = "앱 버전",
+                    description = "현재 설치된 GraceOn 버전 정보입니다.",
+                    value = if (appVersion.isBlank()) "1.0" else appVersion,
+                    onClick = {}
+                )
+                PreferenceCard(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = null,
+                            tint = Primary
+                        )
+                    },
+                    title = "로그아웃",
+                    description = "현재 세션을 종료하고 로그인 화면으로 돌아갑니다.",
+                    value = "",
+                    onClick = onLogout
+                )
+                SectionLabel("앱 설정")
                 PreferenceCard(
                     icon = {
                         Icon(
@@ -130,21 +167,17 @@ fun ProfileScreen(
                     title = "광고로 횟수 추가",
                     description = when {
                         isRewardLoading -> "광고를 준비하거나 보상을 반영하는 중입니다."
-                        rewardedAvailableToday > 0 -> "리워드 광고를 시청하고 말씀 추가 1회를 받을 수 있습니다."
-                        else -> "오늘은 광고 보상으로 추가 횟수를 모두 받았습니다."
+                        rewardedCredits > 0 -> "광고를 시청하면 오늘 사용할 수 있는 말씀 횟수 1회가 더 늘어납니다."
+                        else -> "리워드 광고를 시청하고 말씀 횟수 1회를 추가할 수 있습니다."
                     },
-                    value = when {
-                        isRewardLoading -> "처리중"
-                        rewardedAvailableToday > 0 -> "광고 보기"
-                        else -> "완료"
-                    },
-                    enabled = rewardedAvailableToday > 0 && !isRewardLoading,
+                    value = if (isRewardLoading) "처리중" else "광고 보기",
+                    enabled = !isRewardLoading,
                     onClick = {
                         coroutineScope.launch {
                             isRewardLoading = true
                             when (val result = onWatchRewardAd()) {
                                 is RewardCreditActionResult.Success -> {
-                                    snackbarHostState.showSnackbar("광고 보상 1회가 지급되었습니다. 현재 ${result.rewardedCredits}회 보유")
+                                    snackbarHostState.showSnackbar("말씀 횟수 1회가 추가되었습니다.")
                                 }
                                 is RewardCreditActionResult.Error -> {
                                     snackbarHostState.showSnackbar(result.message)
@@ -153,32 +186,6 @@ fun ProfileScreen(
                             isRewardLoading = false
                         }
                     }
-                )
-                PreferenceCard(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.BookmarkBorder,
-                            contentDescription = null,
-                            tint = Primary
-                        )
-                    },
-                    title = "앱 버전",
-                    description = "현재 설치된 GraceOn 버전 정보입니다.",
-                    value = if (appVersion.isBlank()) "1.0" else appVersion,
-                    onClick = {}
-                )
-                PreferenceCard(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = null,
-                            tint = Primary
-                        )
-                    },
-                    title = "로그아웃",
-                    description = "현재 세션을 종료하고 로그인 화면으로 돌아갑니다.",
-                    value = "",
-                    onClick = onLogout
                 )
             }
 
@@ -197,7 +204,9 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileHeroCard() {
+private fun ProfileHeroCard(
+    currentUserEmail: String?
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = GlassSurfaceStrong,
@@ -221,19 +230,68 @@ private fun ProfileHeroCard() {
                 )
             }
             Text(
-                text = "앱 설정",
+                text = "내 정보",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "알림, 테마, 앱 정보를 한 곳에서 관리할 수 있습니다.",
+                text = currentUserEmail ?: "로그인 정보를 불러오는 중입니다.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 24.sp
             )
         }
     }
+}
+
+@Composable
+private fun UsageSummaryCard(
+    remainingCount: Int,
+    dailyLimit: Int,
+    usedToday: Int
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassSurfaceStrong,
+        shape = RoundedCornerShape(28.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "오늘 남은 횟수",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = "${remainingCount}회",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "무료 ${dailyLimit}회 중 ${usedToday}회 사용",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 20.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(horizontal = 4.dp)
+    )
 }
 
 @Composable
@@ -245,12 +303,14 @@ private fun PreferenceCard(
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val cardShape = RoundedCornerShape(26.dp)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(cardShape)
             .clickable(enabled = enabled, onClick = onClick),
         color = GlassSurface,
-        shape = RoundedCornerShape(26.dp),
+        shape = cardShape,
         border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
     ) {
         Row(
@@ -348,10 +408,13 @@ private fun ThemeOption(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val optionShape = RoundedCornerShape(20.dp)
     Surface(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier
+            .clip(optionShape)
+            .clickable(onClick = onClick),
         color = if (selected) MaterialTheme.colorScheme.primaryContainer else GlassSurfaceStrong,
-        shape = RoundedCornerShape(20.dp),
+        shape = optionShape,
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
             if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else GlassBorder

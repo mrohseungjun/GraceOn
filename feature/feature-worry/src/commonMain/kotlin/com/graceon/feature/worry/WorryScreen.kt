@@ -58,6 +58,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -276,10 +277,25 @@ private fun IntroStep(
         }
 
         item {
-            HeroModeCard(
-                title = "오늘 내게 주시는 말씀",
-                description = "복잡한 고민 없이, 지금 당신에게 가장 필요한 위로를 바로 뽑아보세요.",
-                onClick = onStartAiMode
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "상황별 맞춤 위로 찾기",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "지금 마음과 가장 가까운 고민을 바로 선택해보세요.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        item {
+            CategoryCardGrid(
+                categories = categories,
+                onSelectCategory = onSelectCategory
             )
         }
 
@@ -288,35 +304,21 @@ private fun IntroStep(
         }
 
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "상황별 맞춤 위로 찾기",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                TextButton(onClick = onStartCategoryMode) {
-                    Text("전체보기", color = Primary)
-                }
-            }
-        }
-
-        item {
-            CategoryCardGrid(
-                categories = categories.take(4),
-                onSelectCategory = onSelectCategory
+            HeroModeCard(
+                title = "오늘 내게 주시는 말씀",
+                description = "고민 선택 없이, 지금 당신에게 필요한 위로를 바로 받아보세요.",
+                onClick = onStartAiMode
             )
         }
 
         item {
+            val recentCardShape = RoundedCornerShape(28.dp)
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(recentCardShape),
                 color = GlassSurface,
-                shape = RoundedCornerShape(28.dp),
+                shape = recentCardShape,
                 border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
             ) {
                 Row(
@@ -357,6 +359,8 @@ private fun IntroStep(
 private fun DailyUsageCard(
     dailyUsage: WorryContract.DailyUsageUiState
 ) {
+    val totalRemaining = dailyUsage.remainingToday + dailyUsage.rewardedCredits
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = GlassSurface,
@@ -370,7 +374,7 @@ private fun DailyUsageCard(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = "오늘 무료 횟수",
+                text = "오늘 남은 횟수",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
@@ -379,24 +383,19 @@ private fun DailyUsageCard(
                 text = if (dailyUsage.isLoading) {
                     "남은 횟수를 확인하는 중..."
                 } else {
-                    buildString {
-                        append("${dailyUsage.remainingToday}회 남음 · 총 ${dailyUsage.dailyLimit}회 중 ${dailyUsage.usedToday}회 사용")
-                        if (dailyUsage.rewardedCredits > 0) {
-                            append(" · 광고 보상 ${dailyUsage.rewardedCredits}회 보유")
-                        }
-                    }
+                    "${totalRemaining}회 남음 · 무료 ${dailyUsage.dailyLimit}회 중 ${dailyUsage.usedToday}회 사용"
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = if (dailyUsage.remainingToday > 0) {
-                    "오늘은 아직 말씀을 더 받을 수 있어요."
+                text = if (totalRemaining > 0) {
+                    "지금 바로 말씀을 더 받을 수 있어요."
                 } else if (dailyUsage.rewardedAvailableToday > 0) {
-                    "무료 횟수를 모두 사용했습니다. 광고를 보고 추가 1회를 받을 수 있어요."
+                    "횟수를 모두 사용했습니다. 광고를 보고 같은 횟수 1회를 더 받을 수 있어요."
                 } else {
-                    "오늘 무료 횟수와 광고 보상을 모두 사용했습니다. 내일 다시 열립니다."
+                    "오늘 횟수를 모두 사용했습니다. 내일 다시 열립니다."
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -412,12 +411,14 @@ private fun HeroModeCard(
     description: String,
     onClick: () -> Unit
 ) {
+    val cardShape = RoundedCornerShape(32.dp)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(cardShape)
             .clickable(onClick = onClick),
         color = GlassSurfaceStrong,
-        shape = RoundedCornerShape(32.dp),
+        shape = cardShape,
         border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
     ) {
         Box(

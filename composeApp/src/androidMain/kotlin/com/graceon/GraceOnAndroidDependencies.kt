@@ -70,6 +70,9 @@ internal fun createGraceOnAndroidDependencies(
                 context.startActivity(intent)
             }
         },
+        getCurrentUserEmail = {
+            proxyApiClient.getCurrentUserEmail()
+        },
         logout = {
             proxyApiClient.logout()
             AuthPreferences(PlatformContext(context)).resetAuthenticated()

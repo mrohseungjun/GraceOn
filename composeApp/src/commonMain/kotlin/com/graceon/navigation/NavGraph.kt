@@ -58,8 +58,6 @@ private sealed interface NavEntry {
 internal object Screen {
     const val LOGIN = "login"
     const val WORRY = "worry"
-    const val GACHA = "gacha"
-    const val RESULT = "result"
     const val SAVED = "saved"
     const val PROFILE = "profile"
 }
@@ -95,17 +93,29 @@ internal fun NavGraph(
             deletePrescriptionUseCase = dependencies.deletePrescriptionUseCase
         )
     }
+    var profileEmail by remember { mutableStateOf<String?>(null) }
+    var profileRemainingToday by remember { mutableStateOf(0) }
+    var profileDailyLimit by remember { mutableStateOf(1) }
+    var profileUsedToday by remember { mutableStateOf(0) }
     var profileRewardedCredits by remember { mutableStateOf(0) }
     var profileRewardedAvailableToday by remember { mutableStateOf(0) }
 
     suspend fun refreshProfileRewardUsage() {
         when (val result = dependencies.getDailyFreeUsageUseCase()) {
             is Result.Success -> {
+                profileDailyLimit = result.data.dailyLimit
+                profileUsedToday = result.data.usedToday
+                profileRemainingToday = result.data.remainingToday
                 profileRewardedCredits = result.data.rewardedCredits
                 profileRewardedAvailableToday = result.data.rewardedAvailableToday
             }
             else -> Unit
         }
+    }
+
+    suspend fun refreshProfileSummary() {
+        profileEmail = dependencies.getCurrentUserEmail()
+        refreshProfileRewardUsage()
     }
     val initialEntry = remember(startDestination) {
         when (startDestination) {
@@ -127,6 +137,13 @@ internal fun NavGraph(
         navigationDirection = NavigationDirection.Replace
         backStack.clear()
         backStack += entry
+    }
+
+    fun navigateHome() {
+        worryViewModel.handleIntent(com.graceon.feature.worry.WorryContract.Intent.NavigateBack)
+        worryViewModel.handleIntent(com.graceon.feature.worry.WorryContract.Intent.NavigateBack)
+        worryViewModel.handleIntent(com.graceon.feature.worry.WorryContract.Intent.NavigateBack)
+        replaceRoot(NavEntry.Worry)
     }
 
     fun popBackStack() {
@@ -272,7 +289,7 @@ internal fun NavGraph(
                     onNavigateToProfile = { replaceRoot(NavEntry.Profile) },
                     onShareText = onShareText,
                     onRetry = { retryFromResult(entry.args) },
-                    onNavigateHome = ::popToWorry
+                    onNavigateHome = ::navigateHome
                 )
             }
 
@@ -286,16 +303,20 @@ internal fun NavGraph(
                         replaceRoot(NavEntry.Worry)
                     },
                     onNavigateToProfile = { replaceRoot(NavEntry.Profile) },
-                    onNavigateHome = { replaceRoot(NavEntry.Worry) }
+                    onNavigateHome = ::navigateHome
                 )
             }
 
             NavEntry.Profile -> {
                 LaunchedEffect(Unit) {
-                    refreshProfileRewardUsage()
+                    refreshProfileSummary()
                 }
 
                 ProfileScreen(
+                    currentUserEmail = profileEmail,
+                    remainingCount = profileRemainingToday + profileRewardedCredits,
+                    dailyLimit = profileDailyLimit,
+                    usedToday = profileUsedToday,
                     isDailyVerseNotificationEnabled = isDailyVerseNotificationEnabled,
                     isDarkThemeEnabled = isDarkThemeEnabled,
                     appVersion = appVersion,
@@ -308,10 +329,9 @@ internal fun NavGraph(
                             RewardedAdResult.RewardEarned -> {
                                 when (val grantResult = dependencies.grantRewardedCreditUseCase()) {
                                     is Result.Success -> {
-                                        refreshProfileRewardUsage()
+                                        refreshProfileSummary()
                                         RewardCreditActionResult.Success(
-                                            rewardedCredits = profileRewardedCredits,
-                                            rewardedAvailableToday = profileRewardedAvailableToday
+                                            totalRemainingCount = profileRemainingToday + profileRewardedCredits
                                         )
                                     }
                                     is Result.Error -> {
@@ -334,7 +354,7 @@ internal fun NavGraph(
                         replaceRoot(NavEntry.Login)
                         onLogout()
                     },
-                    onNavigateHome = { replaceRoot(NavEntry.Worry) },
+                    onNavigateHome = ::navigateHome,
                     onNavigateToWord = {
                         worryViewModel.handleIntent(com.graceon.feature.worry.WorryContract.Intent.StartCategoryMode)
                         replaceRoot(NavEntry.Worry)

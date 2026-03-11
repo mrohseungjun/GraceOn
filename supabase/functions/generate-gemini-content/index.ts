@@ -7,11 +7,9 @@ const corsHeaders = {
 }
 
 const DAILY_LIMIT = 1
-const MAX_REWARDED_GRANTS_PER_DAY = 1
 const DAILY_USAGE_DATE_KEY = "graceon_daily_free_generation_date"
 const DAILY_USAGE_COUNT_KEY = "graceon_daily_free_generation_count"
 const REWARDED_USAGE_DATE_KEY = "graceon_rewarded_generation_date"
-const REWARDED_GRANT_COUNT_KEY = "graceon_rewarded_generation_grant_count"
 const REWARDED_CREDIT_COUNT_KEY = "graceon_rewarded_generation_credit_count"
 const DAILY_USAGE_TIMEZONE = "Asia/Seoul"
 
@@ -124,21 +122,10 @@ Deno.serve(async (request) => {
   }
 
   if (body.action === "grant_reward") {
-    if (usage.rewardedAvailableToday <= 0) {
-      return Response.json(
-        {
-          error: "오늘은 광고 보상으로 받을 수 있는 추가 횟수를 모두 사용했습니다.",
-          rewardedEligible: false,
-        },
-        { status: 429, headers: corsHeaders },
-      )
-    }
-
     const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey)
     const rewardedMetadata = {
       ...currentUserMetadata,
       [REWARDED_USAGE_DATE_KEY]: todayInKorea(),
-      [REWARDED_GRANT_COUNT_KEY]: usage.rewardedGrantedToday + 1,
       [REWARDED_CREDIT_COUNT_KEY]: usage.rewardedCredits + 1,
     }
 
@@ -160,7 +147,7 @@ Deno.serve(async (request) => {
         usedToday: usage.freeUsedToday,
         remainingToday: usage.remainingFreeToday,
         rewardedCredits: usage.rewardedCredits + 1,
-        rewardedAvailableToday: usage.rewardedAvailableToday - 1,
+        rewardedAvailableToday: 1,
       } satisfies DailyUsageStatusResponse,
       { status: 200, headers: corsHeaders },
     )
@@ -178,7 +165,7 @@ Deno.serve(async (request) => {
     return Response.json(
       {
         error: "오늘 무료 말씀 1회를 모두 사용했습니다. 광고를 보고 추가 1회를 받을 수 있습니다.",
-        rewardedEligible: usage.rewardedAvailableToday > 0,
+        rewardedEligible: true,
       },
       { status: 429, headers: corsHeaders },
     )
@@ -264,10 +251,6 @@ function resolveDailyUsage(userMetadata: Record<string, unknown>) {
     freeUsageDate === today
       ? Number(userMetadata[DAILY_USAGE_COUNT_KEY] ?? 0)
       : 0
-  const rewardedGrantedToday =
-    rewardedUsageDate === today
-      ? Number(userMetadata[REWARDED_GRANT_COUNT_KEY] ?? 0)
-      : 0
   const rewardedCredits =
     rewardedUsageDate === today
       ? Number(userMetadata[REWARDED_CREDIT_COUNT_KEY] ?? 0)
@@ -276,8 +259,7 @@ function resolveDailyUsage(userMetadata: Record<string, unknown>) {
   return {
     freeUsedToday,
     remainingFreeToday: Math.max(DAILY_LIMIT - freeUsedToday, 0),
-    rewardedGrantedToday,
     rewardedCredits,
-    rewardedAvailableToday: Math.max(MAX_REWARDED_GRANTS_PER_DAY - rewardedGrantedToday, 0),
+    rewardedAvailableToday: 1,
   }
 }

@@ -11,13 +11,15 @@ class AndroidSupabaseSessionStore(
         val accessToken = preferences.getString("access_token", null).orEmpty()
         val refreshToken = preferences.getString("refresh_token", null).orEmpty()
         val expiresAt = preferences.getLong("expires_at_epoch_seconds", 0L)
+        val email = preferences.getString("email", null)
 
         if (accessToken.isBlank() || refreshToken.isBlank() || expiresAt <= 0L) return null
 
         return SupabaseSession(
             accessToken = accessToken,
             refreshToken = refreshToken,
-            expiresAtEpochSeconds = expiresAt
+            expiresAtEpochSeconds = expiresAt,
+            email = email
         )
     }
 
@@ -26,6 +28,7 @@ class AndroidSupabaseSessionStore(
             .putString("access_token", session.accessToken)
             .putString("refresh_token", session.refreshToken)
             .putLong("expires_at_epoch_seconds", session.expiresAtEpochSeconds)
+            .putString("email", session.email)
             .apply()
     }
 

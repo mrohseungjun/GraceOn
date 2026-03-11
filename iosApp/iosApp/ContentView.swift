@@ -32,10 +32,13 @@ struct ComposeView: UIViewControllerRepresentable {
                 DispatchQueue.main.async {
                     UIApplication.shared.open(url)
                 }
+            },
+            onShowRewardedAd: { callback in
+                coordinator.showRewardedAd(callback: callback)
             }
         )
 
-        coordinator.hostViewController = viewController
+        coordinator.configure(hostViewController: viewController)
         return viewController
     }
 
@@ -88,6 +91,11 @@ struct ComposeView: UIViewControllerRepresentable {
     final class Coordinator {
         weak var hostViewController: UIViewController?
 
+        func configure(hostViewController: UIViewController) {
+            self.hostViewController = hostViewController
+            RewardedAdManager.shared.configure(hostViewController: hostViewController)
+        }
+
         func share(text: String) {
             DispatchQueue.main.async { [weak self] in
                 guard let hostViewController = self?.hostViewController else { return }
@@ -109,6 +117,12 @@ struct ComposeView: UIViewControllerRepresentable {
 
                 let presenter = hostViewController.presentedViewController ?? hostViewController
                 presenter.present(activityViewController, animated: true)
+            }
+        }
+
+        func showRewardedAd(callback: @escaping (String, String?) -> KotlinUnit) {
+            RewardedAdManager.shared.show { status, message in
+                _ = callback(status, message)
             }
         }
     }

@@ -181,6 +181,10 @@ class GraceOnProxyApiClient(
     suspend fun sendPasswordResetEmail(email: String) {
         authManager.sendPasswordResetEmail(email)
     }
+
+    suspend fun getCurrentUserEmail(): String? {
+        return authManager.getCurrentUserEmail()
+    }
 }
 
 @Serializable
