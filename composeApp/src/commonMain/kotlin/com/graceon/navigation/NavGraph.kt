@@ -30,6 +30,7 @@ import com.graceon.feature.saved.SavedScreen
 import com.graceon.feature.saved.SavedViewModel
 import com.graceon.feature.worry.WorryScreen
 import com.graceon.feature.worry.WorryViewModel
+import com.graceon.feature.worry.WorryContract
 
 private data class WorryArgs(
     val categoryId: String?,
@@ -72,6 +73,7 @@ private enum class NavigationDirection {
 internal fun NavGraph(
     dependencies: GraceOnDependencies,
     startDestination: String = Screen.LOGIN,
+    initialDailyUsage: WorryContract.DailyUsageUiState? = null,
     appVersion: String = "",
     onShareText: (String) -> Unit = {},
     isDailyVerseNotificationEnabled: Boolean = false,
@@ -82,10 +84,11 @@ internal fun NavGraph(
     onLogout: () -> Unit = {},
     onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") }
 ) {
-    val worryViewModel = remember {
+    val worryViewModel = remember(initialDailyUsage) {
         WorryViewModel(
             getDailyFreeUsageUseCase = dependencies.getDailyFreeUsageUseCase,
-            getSavedPrescriptionsUseCase = dependencies.getSavedPrescriptionsUseCase
+            getSavedPrescriptionsUseCase = dependencies.getSavedPrescriptionsUseCase,
+            initialDailyUsage = initialDailyUsage
         )
     }
     val savedViewModel = remember {

@@ -46,6 +46,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -452,11 +453,20 @@ private fun DailyUsageCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
+            if (dailyUsage.isLoading) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp),
+                    color = Primary,
+                    trackColor = MaterialTheme.colorScheme.outlineVariant
+                )
+            }
             Text(
                 text = if (dailyUsage.isLoading) {
                     "남은 횟수를 확인하는 중..."
                 } else {
-                    "${totalRemaining}회 남음 · 무료 ${dailyUsage.dailyLimit}회 중 ${dailyUsage.usedToday}회 사용"
+                    "오늘 ${totalRemaining}회 이용 가능"
                 },
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -464,9 +474,9 @@ private fun DailyUsageCard(
             )
             Text(
                 text = if (totalRemaining > 0) {
-                    "지금 바로 말씀을 더 받을 수 있어요."
+                    "지금 바로 말씀을 받을 수 있어요."
                 } else if (dailyUsage.rewardedAvailableToday > 0) {
-                    "횟수를 모두 사용했습니다. 광고를 보고 같은 횟수 1회를 더 받을 수 있어요."
+                    "오늘 무료 횟수를 모두 사용했습니다. 광고를 보면 1회를 더 추가할 수 있어요."
                 } else {
                     "오늘 횟수를 모두 사용했습니다. 내일 다시 열립니다."
                 },

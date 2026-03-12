@@ -23,12 +23,17 @@ import kotlinx.coroutines.launch
  */
 class WorryViewModel(
     private val getDailyFreeUsageUseCase: GetDailyFreeUsageUseCase,
-    private val getSavedPrescriptionsUseCase: GetSavedPrescriptionsUseCase
+    private val getSavedPrescriptionsUseCase: GetSavedPrescriptionsUseCase,
+    initialDailyUsage: WorryContract.DailyUsageUiState? = null
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var recentSavedJob: Job? = null
 
-    private val _state = MutableStateFlow(WorryContract.State())
+    private val _state = MutableStateFlow(
+        WorryContract.State(
+            dailyUsage = initialDailyUsage ?: WorryContract.DailyUsageUiState()
+        )
+    )
     val state: StateFlow<WorryContract.State> = _state.asStateFlow()
 
     private val _effect = Channel<WorryContract.Effect>(Channel.BUFFERED)
@@ -36,7 +41,9 @@ class WorryViewModel(
 
     init {
         loadCategories()
-        refreshDailyUsage()
+        if (initialDailyUsage == null) {
+            refreshDailyUsage()
+        }
         observeRecentSavedPrescription()
     }
 

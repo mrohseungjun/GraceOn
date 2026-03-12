@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.GraceOn" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.GraceOn.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/graceon_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/app_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.GraceOn</item>
+    </style>
 </resources>

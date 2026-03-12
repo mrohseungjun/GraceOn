@@ -102,7 +102,6 @@ fun ProfileScreen(
                     .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                ProfileHeroCard(currentUserEmail = currentUserEmail)
                 UsageSummaryCard(
                     remainingCount = remainingCount,
                     dailyLimit = dailyLimit,

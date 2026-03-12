@@ -34,6 +34,7 @@ kotlin {
             implementation(project(":core:core-network"))
 
             implementation(libs.androidx.core.ktx)
+            implementation("androidx.core:core-splashscreen:1.0.1")
             implementation(libs.androidx.lifecycle.runtime.ktx)
             implementation(libs.androidx.activity.compose)
             implementation(libs.google.play.services.ads)
@@ -62,6 +63,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.kotlinx.serialization.json)
         }
