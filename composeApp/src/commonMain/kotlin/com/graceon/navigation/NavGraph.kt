@@ -15,6 +15,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.graceon.GraceOnDependencies
+import com.graceon.ads.GraceOnInlineAdSlot
+import com.graceon.ads.InlineAdPlacement
 import com.graceon.core.common.RewardCreditActionResult
 import com.graceon.core.common.Result
 import com.graceon.core.common.RewardedAdResult
@@ -82,7 +84,8 @@ internal fun NavGraph(
     onToggleDarkTheme: (Boolean) -> Unit = {},
     onLoginComplete: () -> Unit = {},
     onLogout: () -> Unit = {},
-    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") }
+    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") },
+    onInlineAdPlacementChanged: (String?) -> Unit = {}
 ) {
     val worryViewModel = remember(initialDailyUsage) {
         WorryViewModel(
@@ -112,6 +115,7 @@ internal fun NavGraph(
                 profileRemainingToday = result.data.remainingToday
                 profileRewardedCredits = result.data.rewardedCredits
                 profileRewardedAvailableToday = result.data.rewardedAvailableToday
+                worryViewModel.syncDailyUsage(result.data)
             }
             else -> Unit
         }
@@ -229,6 +233,10 @@ internal fun NavGraph(
             NavEntry.Worry -> {
                 WorryScreen(
                     viewModel = worryViewModel,
+                    inlineAdSlot = {
+                        GraceOnInlineAdSlot(placement = InlineAdPlacement.HomeFeed)
+                    },
+                    onInlineAdPlacementChanged = onInlineAdPlacementChanged,
                     onNavigateToGacha = { categoryId, detailId, customWorry, isAiMode ->
                         navigate(
                             NavEntry.Gacha(
@@ -288,6 +296,10 @@ internal fun NavGraph(
                 }
                 ResultScreen(
                     viewModel = viewModel,
+                    inlineAdSlot = {
+                        GraceOnInlineAdSlot(placement = InlineAdPlacement.ResultContent)
+                    },
+                    onInlineAdPlacementChanged = onInlineAdPlacementChanged,
                     onNavigateBack = ::popToWorry,
                     onNavigateToSaved = { navigate(NavEntry.Saved) },
                     onNavigateToProfile = { replaceRoot(NavEntry.Profile) },

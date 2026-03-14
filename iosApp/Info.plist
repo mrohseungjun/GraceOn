@@ -37,6 +37,10 @@
 	<string>$(GRACEON_API_BASE_URL)</string>
 	<key>ADMOB_REWARDED_AD_UNIT_ID</key>
 	<string>$(ADMOB_REWARDED_AD_UNIT_ID)</string>
+	<key>ADMOB_HOME_BANNER_AD_UNIT_ID</key>
+	<string>$(ADMOB_HOME_BANNER_AD_UNIT_ID)</string>
+	<key>ADMOB_RESULT_BANNER_AD_UNIT_ID</key>
+	<string>$(ADMOB_RESULT_BANNER_AD_UNIT_ID)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>$(ADMOB_APP_ID)</string>
 	<key>SUPABASE_ANON_KEY</key>

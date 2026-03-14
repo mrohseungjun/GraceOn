@@ -39,7 +39,8 @@ internal fun GraceOnRoot(
     appVersion: String,
     onShareText: (String) -> Unit = {},
     onToggleDailyVerseNotification: (Boolean) -> Unit = {},
-    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") }
+    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") },
+    onInlineAdPlacementChanged: (String?) -> Unit = {}
 ) {
     val isAuthenticated by dependencies.authPreferences
         .isAuthenticated
@@ -126,7 +127,8 @@ internal fun GraceOnRoot(
                                 dependencies.logout()
                             }
                         },
-                        onShowRewardedAd = onShowRewardedAd
+                        onShowRewardedAd = onShowRewardedAd,
+                        onInlineAdPlacementChanged = onInlineAdPlacementChanged
                     )
                 }
             }

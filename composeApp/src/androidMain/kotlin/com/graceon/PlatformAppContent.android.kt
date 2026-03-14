@@ -16,7 +16,8 @@ internal actual fun PlatformAppContent(
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
     onOpenUrl: (String) -> Unit,
-    onShowRewardedAd: suspend () -> RewardedAdResult
+    onShowRewardedAd: suspend () -> RewardedAdResult,
+    onInlineAdPlacementChanged: (String?) -> Unit
 ) {
     val context = LocalContext.current
     val dependencies = remember(context) {
@@ -51,6 +52,7 @@ internal actual fun PlatformAppContent(
         },
         onShowRewardedAd = {
             AndroidRewardedAdManager.show(context)
-        }
+        },
+        onInlineAdPlacementChanged = onInlineAdPlacementChanged
     )
 }

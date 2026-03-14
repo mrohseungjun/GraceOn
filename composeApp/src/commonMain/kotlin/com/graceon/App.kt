@@ -11,7 +11,8 @@ fun App(
     onShareText: (String) -> Unit = {},
     onToggleDailyVerseNotification: (Boolean) -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
-    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") }
+    onShowRewardedAd: suspend () -> RewardedAdResult = { RewardedAdResult.Failed("리워드 광고를 사용할 수 없습니다.") },
+    onInlineAdPlacementChanged: (String?) -> Unit = {}
 ) {
     PlatformAppContent(
         apiBaseUrl = apiBaseUrl,
@@ -20,7 +21,8 @@ fun App(
         onShareText = onShareText,
         onToggleDailyVerseNotification = onToggleDailyVerseNotification,
         onOpenUrl = onOpenUrl,
-        onShowRewardedAd = onShowRewardedAd
+        onShowRewardedAd = onShowRewardedAd,
+        onInlineAdPlacementChanged = onInlineAdPlacementChanged
     )
 }
 
@@ -32,5 +34,6 @@ internal expect fun PlatformAppContent(
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
     onOpenUrl: (String) -> Unit,
-    onShowRewardedAd: suspend () -> RewardedAdResult
+    onShowRewardedAd: suspend () -> RewardedAdResult,
+    onInlineAdPlacementChanged: (String?) -> Unit
 )

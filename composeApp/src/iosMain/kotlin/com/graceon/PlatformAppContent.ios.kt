@@ -12,7 +12,8 @@ internal actual fun PlatformAppContent(
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
     onOpenUrl: (String) -> Unit,
-    onShowRewardedAd: suspend () -> RewardedAdResult
+    onShowRewardedAd: suspend () -> RewardedAdResult,
+    onInlineAdPlacementChanged: (String?) -> Unit
 ) {
     val dependencies = remember(apiBaseUrl, supabaseAnonKey, onOpenUrl) {
         createGraceOnIosDependencies(
@@ -26,6 +27,7 @@ internal actual fun PlatformAppContent(
         appVersion = appVersion,
         onShareText = onShareText,
         onToggleDailyVerseNotification = onToggleDailyVerseNotification,
-        onShowRewardedAd = onShowRewardedAd
+        onShowRewardedAd = onShowRewardedAd,
+        onInlineAdPlacementChanged = onInlineAdPlacementChanged
     )
 }

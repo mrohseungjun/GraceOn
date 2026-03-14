@@ -3,3 +3,5 @@ GRACEON_API_BASE_URL=https:/$()/your-project-ref.supabase.co/functions/v1/genera
 SUPABASE_ANON_KEY=your-supabase-anon-key
 ADMOB_APP_ID=ca-app-pub-ios-app-id
 ADMOB_REWARDED_AD_UNIT_ID=ca-app-pub-ios-rewarded-unit-id
+ADMOB_HOME_BANNER_AD_UNIT_ID=ca-app-pub-ios-home-banner-unit-id
+ADMOB_RESULT_BANNER_AD_UNIT_ID=ca-app-pub-ios-result-banner-unit-id

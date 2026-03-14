@@ -14,7 +14,8 @@ fun MainViewController(
     onShareText: (String) -> Unit,
     onToggleDailyVerseNotification: (Boolean) -> Unit,
     onOpenUrl: (String) -> Unit,
-    onShowRewardedAd: RewardedAdPresenter
+    onShowRewardedAd: RewardedAdPresenter,
+    onInlineAdPlacementChanged: (String?) -> Unit
 ) = ComposeUIViewController {
     App(
         apiBaseUrl = apiBaseUrl,
@@ -36,6 +37,7 @@ fun MainViewController(
                     continuation.resume(result)
                 }
             }
-        }
+        },
+        onInlineAdPlacementChanged = onInlineAdPlacementChanged
     )
 }

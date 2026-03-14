@@ -2,6 +2,7 @@ package com.graceon.feature.worry
 
 import com.graceon.domain.data.CategoryData
 import com.graceon.domain.model.Category
+import com.graceon.domain.model.DailyFreeUsage
 import com.graceon.domain.model.RANDOM_VERSE_PROMPT
 import com.graceon.domain.usecase.GetDailyFreeUsageUseCase
 import com.graceon.domain.usecase.GetSavedPrescriptionsUseCase
@@ -58,6 +59,19 @@ class WorryViewModel(
             is WorryContract.Intent.ConfirmCustomWorry -> confirmCustomWorry()
             is WorryContract.Intent.RefreshDailyUsage -> refreshDailyUsage()
         }
+    }
+
+    fun syncDailyUsage(dailyUsage: DailyFreeUsage) {
+        _state.value = _state.value.copy(
+            dailyUsage = WorryContract.DailyUsageUiState(
+                isLoading = false,
+                dailyLimit = dailyUsage.dailyLimit,
+                usedToday = dailyUsage.usedToday,
+                remainingToday = dailyUsage.remainingToday,
+                rewardedCredits = dailyUsage.rewardedCredits,
+                rewardedAvailableToday = dailyUsage.rewardedAvailableToday
+            )
+        )
     }
 
     private fun loadCategories() {
@@ -186,16 +200,7 @@ class WorryViewModel(
 
             when (val result = getDailyFreeUsageUseCase()) {
                 is Result.Success -> {
-                    _state.value = _state.value.copy(
-                        dailyUsage = WorryContract.DailyUsageUiState(
-                            isLoading = false,
-                            dailyLimit = result.data.dailyLimit,
-                            usedToday = result.data.usedToday,
-                            remainingToday = result.data.remainingToday,
-                            rewardedCredits = result.data.rewardedCredits,
-                            rewardedAvailableToday = result.data.rewardedAvailableToday
-                        )
-                    )
+                    syncDailyUsage(result.data)
                 }
                 is Result.Error -> {
                     _state.value = _state.value.copy(

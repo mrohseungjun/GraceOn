@@ -36,6 +36,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -61,6 +62,8 @@ import com.graceon.core.ui.theme.Primary
 @Composable
 fun ResultScreen(
     viewModel: ResultViewModel,
+    inlineAdSlot: (@Composable () -> Unit)? = null,
+    onInlineAdPlacementChanged: (String?) -> Unit = {},
     onNavigateBack: () -> Unit,
     onNavigateHome: () -> Unit,
     onNavigateToSaved: () -> Unit,
@@ -79,6 +82,16 @@ fun ResultScreen(
                 is ResultContract.Effect.ShowSaveSuccess -> snackbarHostState.showSnackbar("말씀이 저장되었습니다")
                 is ResultContract.Effect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        onInlineAdPlacementChanged("result_content")
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            onInlineAdPlacementChanged(null)
         }
     }
 
@@ -105,7 +118,7 @@ fun ResultScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 120.dp),
+                    .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 230.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 VerseHeroCard(state = state)
@@ -130,6 +143,7 @@ fun ResultScreen(
                     onRetry = onRetry,
                     onReset = { viewModel.handleIntent(ResultContract.Intent.Reset) }
                 )
+                inlineAdSlot?.invoke()
             }
 
             GraceOnBottomBar(

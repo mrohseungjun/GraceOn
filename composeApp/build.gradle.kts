@@ -91,10 +91,16 @@ android {
             ?: "ca-app-pub-3940256099942544~3347511713"
         val admobRewardedAdUnitId = localProperties.getProperty("ADMOB_REWARDED_AD_UNIT_ID")
             ?: "ca-app-pub-3940256099942544/5224354917"
+        val admobHomeBannerAdUnitId = localProperties.getProperty("ADMOB_HOME_BANNER_AD_UNIT_ID")
+            ?: "ca-app-pub-3940256099942544/9214589741"
+        val admobResultBannerAdUnitId = localProperties.getProperty("ADMOB_RESULT_BANNER_AD_UNIT_ID")
+            ?: "ca-app-pub-3940256099942544/9214589741"
         buildConfigField("String", "GRACEON_API_BASE_URL", "\"$graceOnApiBaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "ADMOB_APP_ID", "\"$admobAppId\"")
         buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"$admobRewardedAdUnitId\"")
+        buildConfigField("String", "ADMOB_HOME_BANNER_AD_UNIT_ID", "\"$admobHomeBannerAdUnitId\"")
+        buildConfigField("String", "ADMOB_RESULT_BANNER_AD_UNIT_ID", "\"$admobResultBannerAdUnitId\"")
         manifestPlaceholders["ADMOB_APP_ID"] = admobAppId
     }
 

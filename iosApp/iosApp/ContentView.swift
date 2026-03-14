@@ -7,12 +7,20 @@
 
 import SwiftUI
 import ComposeApp
+import Combine
 import UserNotifications
 import UIKit
 
+@MainActor
+final class InlineAdPlacementStore: ObservableObject {
+    @Published var placement: String?
+}
+
 struct ComposeView: UIViewControllerRepresentable {
+    @ObservedObject var inlineAdPlacementStore: InlineAdPlacementStore
+
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(inlineAdPlacementStore: inlineAdPlacementStore)
     }
 
     func makeUIViewController(context: Context) -> UIViewController {
@@ -35,6 +43,9 @@ struct ComposeView: UIViewControllerRepresentable {
             },
             onShowRewardedAd: { callback in
                 coordinator.showRewardedAd(callback: callback)
+            },
+            onInlineAdPlacementChanged: { placement in
+                coordinator.updateInlineAdPlacement(placement)
             }
         )
 
@@ -90,6 +101,11 @@ struct ComposeView: UIViewControllerRepresentable {
 
     final class Coordinator {
         weak var hostViewController: UIViewController?
+        private let inlineAdPlacementStore: InlineAdPlacementStore
+
+        init(inlineAdPlacementStore: InlineAdPlacementStore) {
+            self.inlineAdPlacementStore = inlineAdPlacementStore
+        }
 
         func configure(hostViewController: UIViewController) {
             self.hostViewController = hostViewController
@@ -125,13 +141,29 @@ struct ComposeView: UIViewControllerRepresentable {
                 _ = callback(status, message)
             }
         }
+
+        func updateInlineAdPlacement(_ placement: String?) {
+            DispatchQueue.main.async {
+                self.inlineAdPlacementStore.placement = placement
+            }
+        }
     }
 }
 
 struct ContentView: View {
+    @StateObject private var inlineAdPlacementStore = InlineAdPlacementStore()
+
     var body: some View {
-        ComposeView()
-            .ignoresSafeArea()
+        ZStack(alignment: .bottom) {
+            ComposeView(inlineAdPlacementStore: inlineAdPlacementStore)
+                .ignoresSafeArea()
+
+            if let placement = inlineAdPlacementStore.placement {
+                InlineBannerAdOverlay(placement: placement)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: inlineAdPlacementStore.placement)
             .onOpenURL { url in
                 AuthBridgeKt.handleAuthCallbackUrl(url: url.absoluteString)
             }

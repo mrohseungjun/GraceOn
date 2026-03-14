@@ -55,6 +55,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -90,6 +91,8 @@ import com.graceon.domain.model.SavedPrescription
 @Composable
 fun WorryScreen(
     viewModel: WorryViewModel,
+    inlineAdSlot: (@Composable () -> Unit)? = null,
+    onInlineAdPlacementChanged: (String?) -> Unit = {},
     onNavigateToGacha: (String?, String?, String?, Boolean) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToSaved: () -> Unit = {},
@@ -119,6 +122,15 @@ fun WorryScreen(
         if (state.step == WorryContract.State.Step.Intro) {
             viewModel.handleIntent(WorryContract.Intent.RefreshDailyUsage)
         }
+        onInlineAdPlacementChanged(
+            if (state.step == WorryContract.State.Step.Intro) "home_feed" else null
+        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            onInlineAdPlacementChanged(null)
+        }
     }
 
     GraceOnScaffold(
@@ -144,6 +156,7 @@ fun WorryScreen(
 
             AnimatedWorryContent(
                 state = state,
+                inlineAdSlot = inlineAdSlot,
                 onStartCategoryMode = {
                     viewModel.handleIntent(WorryContract.Intent.StartCategoryMode)
                 },
@@ -187,6 +200,7 @@ fun WorryScreen(
 @Composable
 private fun AnimatedWorryContent(
     state: WorryContract.State,
+    inlineAdSlot: (@Composable () -> Unit)?,
     onStartCategoryMode: () -> Unit,
     onStartAiMode: () -> Unit,
     onSelectCategory: (Category) -> Unit,
@@ -213,6 +227,7 @@ private fun AnimatedWorryContent(
                 categories = state.categories,
                 dailyUsage = state.dailyUsage,
                 recentSavedPrescription = state.recentSavedPrescription,
+                inlineAdSlot = inlineAdSlot,
                 onStartCategoryMode = onStartCategoryMode,
                 onStartAiMode = onStartAiMode,
                 onSelectCategory = onSelectCategory,
@@ -240,6 +255,7 @@ private fun IntroStep(
     categories: List<Category>,
     dailyUsage: WorryContract.DailyUsageUiState,
     recentSavedPrescription: SavedPrescription?,
+    inlineAdSlot: (@Composable () -> Unit)?,
     onStartCategoryMode: () -> Unit,
     onStartAiMode: () -> Unit,
     onSelectCategory: (Category) -> Unit,
@@ -360,6 +376,12 @@ private fun IntroStep(
                         tint = Primary
                     )
                 }
+            }
+        }
+
+        inlineAdSlot?.let { adSlot ->
+            item {
+                adSlot()
             }
         }
     }
