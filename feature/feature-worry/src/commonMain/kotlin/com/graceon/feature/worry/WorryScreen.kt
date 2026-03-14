@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -261,129 +260,115 @@ private fun IntroStep(
     onSelectCategory: (Category) -> Unit,
     onNavigateToSaved: () -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 120.dp),
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "GraceOn.",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
-        }
-
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "안녕하세요,\n오늘 마음은 어떠신가요?",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 38.sp
-                )
-                Text(
-                    text = "당신의 이야기에 귀 기울일 준비가 되었어요.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        item {
-            HeroModeCard(
-                title = "오늘 내게 주시는 말씀",
-                description = "복잡한 고민 없이, 지금 당신에게 가장 필요한 위로를 바로 받아보세요.",
-                onClick = onStartAiMode
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "GraceOn.",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
-        item {
-            DailyUsageCard(dailyUsage = dailyUsage)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "안녕하세요,\n오늘 마음은 어떠신가요?",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 38.sp
+            )
+            Text(
+                text = "당신의 이야기에 귀 기울일 준비가 되었어요.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+        HeroModeCard(
+            title = "오늘 내게 주시는 말씀",
+            description = "복잡한 고민 없이, 지금 당신에게 가장 필요한 위로를 바로 받아보세요.",
+            onClick = onStartAiMode
+        )
+
+        DailyUsageCard(dailyUsage = dailyUsage)
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "상황별 고민 카테고리",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                TextButton(onClick = onStartCategoryMode) {
+                    Text("전체보기", color = Primary)
+                }
+            }
+            CategoryCarousel(
+                categories = categories,
+                onSelectCategory = onSelectCategory
+            )
+        }
+
+        val recentCardShape = RoundedCornerShape(28.dp)
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(recentCardShape),
+            color = GlassSurface,
+            shape = recentCardShape,
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onNavigateToSaved)
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.fillMaxWidth(0.88f)) {
                     Text(
-                        text = "상황별 고민 카테고리",
+                        text = "최근 저장한 말씀",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    TextButton(onClick = onStartCategoryMode) {
-                        Text("전체보기", color = Primary)
-                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = recentSavedPrescription?.verse?.let { "\"$it\"" }
+                            ?: "아직 저장한 말씀이 없습니다.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
-                CategoryCarousel(
-                    categories = categories,
-                    onSelectCategory = onSelectCategory
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = Primary
                 )
             }
         }
 
-        item {
-            val recentCardShape = RoundedCornerShape(28.dp)
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(recentCardShape),
-                color = GlassSurface,
-                shape = recentCardShape,
-                border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onNavigateToSaved)
-                        .padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth(0.88f)) {
-                        Text(
-                            text = "최근 저장한 말씀",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = recentSavedPrescription?.verse?.let { "\"$it\"" }
-                                ?: "아직 저장한 말씀이 없습니다.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 20.sp,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = Primary
-                    )
-                }
-            }
-        }
-
-        inlineAdSlot?.let { adSlot ->
-            item {
-                adSlot()
-            }
-        }
+        inlineAdSlot?.invoke()
     }
 }
 
