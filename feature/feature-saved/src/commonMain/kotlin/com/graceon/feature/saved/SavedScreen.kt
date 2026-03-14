@@ -122,6 +122,7 @@ fun SavedScreen(
             }
         },
         snackbarHostState = snackbarHostState,
+        snackbarPadding = PaddingValues(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 112.dp),
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,

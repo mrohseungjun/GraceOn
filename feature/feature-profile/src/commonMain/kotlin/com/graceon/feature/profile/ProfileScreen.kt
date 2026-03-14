@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -80,6 +81,7 @@ fun ProfileScreen(
         title = "마이",
         onNavigateBack = null,
         snackbarHostState = snackbarHostState,
+        snackbarPadding = PaddingValues(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 112.dp),
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,

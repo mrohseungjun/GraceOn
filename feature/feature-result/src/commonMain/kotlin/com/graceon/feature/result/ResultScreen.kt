@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -99,6 +100,7 @@ fun ResultScreen(
         title = "오늘의 말씀",
         onNavigateBack = onNavigateBack,
         snackbarHostState = snackbarHostState,
+        snackbarPadding = PaddingValues(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 112.dp),
         backgroundBrush = Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.background,
@@ -186,7 +188,7 @@ private fun VerseHeroCard(state: ResultContract.State) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(340.dp)
+                    .heightIn(min = 340.dp)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -212,10 +214,10 @@ private fun VerseHeroCard(state: ResultContract.State) {
 
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
                     Text(
                         text = "\"",
