@@ -41,5 +41,9 @@ gradlePlugin {
             id = "graceon.android.compose"
             implementationClass = "AndroidComposeConventionPlugin"
         }
+        register("composeMultiplatform") {
+            id = "graceon.compose.multiplatform"
+            implementationClass = "ComposeMultiplatformConventionPlugin"
+        }
     }
 }

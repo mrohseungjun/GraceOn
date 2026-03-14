@@ -10,6 +10,7 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
             with(pluginManager) {
                 apply("graceon.android.library")
                 apply("graceon.android.compose")
+                apply("graceon.compose.multiplatform")
             }
 
             val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
