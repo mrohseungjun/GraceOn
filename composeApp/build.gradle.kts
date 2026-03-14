@@ -34,7 +34,7 @@ kotlin {
             implementation(project(":core:core-network"))
 
             implementation(libs.androidx.core.ktx)
-            implementation("androidx.core:core-splashscreen:1.0.1")
+            implementation("androidx.core:core-splashscreen:1.2.0")
             implementation(libs.androidx.lifecycle.runtime.ktx)
             implementation(libs.androidx.activity.compose)
             implementation(libs.google.play.services.ads)
@@ -95,12 +95,15 @@ android {
             ?: "ca-app-pub-3940256099942544/9214589741"
         val admobResultBannerAdUnitId = localProperties.getProperty("ADMOB_RESULT_BANNER_AD_UNIT_ID")
             ?: "ca-app-pub-3940256099942544/9214589741"
+        val androidAppStoreUrl = localProperties.getProperty("ANDROID_APP_STORE_URL")
+            ?: "https://play.google.com/store/apps/details?id=com.graceon"
         buildConfigField("String", "GRACEON_API_BASE_URL", "\"$graceOnApiBaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "ADMOB_APP_ID", "\"$admobAppId\"")
         buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"$admobRewardedAdUnitId\"")
         buildConfigField("String", "ADMOB_HOME_BANNER_AD_UNIT_ID", "\"$admobHomeBannerAdUnitId\"")
         buildConfigField("String", "ADMOB_RESULT_BANNER_AD_UNIT_ID", "\"$admobResultBannerAdUnitId\"")
+        buildConfigField("String", "ANDROID_APP_STORE_URL", "\"$androidAppStoreUrl\"")
         manifestPlaceholders["ADMOB_APP_ID"] = admobAppId
     }
 

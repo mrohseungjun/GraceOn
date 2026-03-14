@@ -59,7 +59,7 @@ private struct InlineBannerAdCard: View {
     var body: some View {
         if loadState != .failed {
         VStack(alignment: .leading, spacing: 8) {
-            Text("후원 광고")
+            Text("광고")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.white.opacity(0.72))
 

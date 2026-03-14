@@ -69,7 +69,7 @@ internal fun GraceOnInlineAdSlot(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = "후원 광고",
+                text = "광고",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

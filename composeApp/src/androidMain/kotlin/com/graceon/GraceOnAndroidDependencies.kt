@@ -3,8 +3,10 @@ package com.graceon
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.graceon.core.common.Result
 import com.graceon.core.network.AndroidSupabaseSessionStore
 import com.graceon.core.common.DefaultDispatcherProvider
+import com.graceon.core.network.AppUpdateConfigResponse
 import com.graceon.core.network.GraceOnProxyApiClient
 import com.graceon.data.datastore.AuthPreferences
 import com.graceon.data.datastore.NotificationPreferences
@@ -19,6 +21,8 @@ import com.graceon.domain.usecase.GrantRewardedCreditUseCase
 import com.graceon.domain.usecase.GetDailyFreeUsageUseCase
 import com.graceon.domain.usecase.GetSavedPrescriptionsUseCase
 import com.graceon.domain.usecase.SavePrescriptionUseCase
+import com.graceon.update.AppPlatform
+import com.graceon.update.AppUpdateConfig
 
 internal fun createGraceOnAndroidDependencies(
     context: Context,
@@ -73,9 +77,34 @@ internal fun createGraceOnAndroidDependencies(
         getCurrentUserEmail = {
             proxyApiClient.getCurrentUserEmail()
         },
+        getAppUpdateConfig = { platform ->
+            runCatching {
+                proxyApiClient
+                    .getAppUpdateConfig(platform.toApiValue())
+                    .toUpdateConfig()
+            }.fold(
+                onSuccess = { Result.Success(it) },
+                onFailure = { Result.Error(it) }
+            )
+        },
         logout = {
             proxyApiClient.logout()
             AuthPreferences(PlatformContext(context)).resetAuthenticated()
         }
     )
 }
+
+private fun AppPlatform.toApiValue(): String = when (this) {
+    AppPlatform.Android -> "android"
+    AppPlatform.Ios -> "ios"
+}
+
+private fun AppUpdateConfigResponse.toUpdateConfig(): AppUpdateConfig =
+    AppUpdateConfig(
+        latestVersion = latestVersion,
+        minimumSupportedVersion = minimumSupportedVersion,
+        optionalTitle = optionalTitle,
+        optionalMessage = optionalMessage,
+        requiredTitle = requiredTitle,
+        requiredMessage = requiredMessage
+    )

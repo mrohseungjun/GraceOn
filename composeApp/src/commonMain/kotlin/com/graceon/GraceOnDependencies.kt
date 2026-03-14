@@ -1,5 +1,6 @@
 package com.graceon
 
+import com.graceon.core.common.Result
 import com.graceon.data.datastore.AuthPreferences
 import com.graceon.data.datastore.NotificationPreferences
 import com.graceon.data.datastore.ThemePreferences
@@ -10,6 +11,8 @@ import com.graceon.domain.usecase.GrantRewardedCreditUseCase
 import com.graceon.domain.usecase.GetDailyFreeUsageUseCase
 import com.graceon.domain.usecase.GetSavedPrescriptionsUseCase
 import com.graceon.domain.usecase.SavePrescriptionUseCase
+import com.graceon.update.AppPlatform
+import com.graceon.update.AppUpdateConfig
 
 internal data class GraceOnDependencies(
     val authPreferences: AuthPreferences,
@@ -28,5 +31,6 @@ internal data class GraceOnDependencies(
     val sendPasswordResetEmail: suspend (String) -> Unit,
     val signInWithGoogle: suspend () -> Unit,
     val getCurrentUserEmail: suspend () -> String?,
+    val getAppUpdateConfig: suspend (AppPlatform) -> Result<AppUpdateConfig>,
     val logout: suspend () -> Unit
 )

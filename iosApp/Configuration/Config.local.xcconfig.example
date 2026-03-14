@@ -5,3 +5,4 @@ ADMOB_APP_ID=ca-app-pub-ios-app-id
 ADMOB_REWARDED_AD_UNIT_ID=ca-app-pub-ios-rewarded-unit-id
 ADMOB_HOME_BANNER_AD_UNIT_ID=ca-app-pub-ios-home-banner-unit-id
 ADMOB_RESULT_BANNER_AD_UNIT_ID=ca-app-pub-ios-result-banner-unit-id
+IOS_APP_STORE_URL=https:/$()/apps.apple.com/kr/app/your-app-name/id1234567890

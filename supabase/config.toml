@@ -5,3 +5,6 @@ enable_anonymous_sign_ins = true
 
 [functions.generate-gemini-content]
 verify_jwt = false
+
+[functions.app-version-config]
+verify_jwt = false

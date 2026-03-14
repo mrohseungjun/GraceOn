@@ -41,6 +41,9 @@ captures/
 .idea/dictionaries
 .idea/libraries
 .idea/caches
+.idea/misc.xml
+.idea/modules.xml
+.idea/xcode.xml
 
 # Keystore files
 *.jks
@@ -63,6 +66,8 @@ google-services.json
 
 # iOS local secrets
 iosApp/Configuration/Config.local.xcconfig
+iosApp/iosApp.xcodeproj/project.xcworkspace/xcuserdata/
+iosApp/iosApp.xcodeproj/xcuserdata/
 
 # Windows
 Thumbs.db

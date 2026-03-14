@@ -154,6 +154,33 @@ class GraceOnProxyApiClient(
         }
     }
 
+    suspend fun getAppUpdateConfig(platform: String): AppUpdateConfigResponse {
+        require(baseUrl.isNotBlank()) {
+            "GraceOn proxy URL is missing. Configure GRACEON_API_BASE_URL for this platform."
+        }
+
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
+        }
+
+        val response = client.get(appUpdateConfigUrl) {
+            header("apikey", supabaseAnonKey)
+            url {
+                parameters.append("platform", platform)
+            }
+        }
+
+        if (!response.status.isSuccess()) {
+            val errorPayload = runCatching { response.body<ProxyErrorResponse>() }.getOrNull()
+            throw GraceOnProxyException(
+                message = errorPayload?.error ?: "GraceOn app update config request failed",
+                statusCode = response.status.value
+            )
+        }
+
+        return response.body()
+    }
+
     fun close() {
         client.close()
     }
@@ -185,6 +212,9 @@ class GraceOnProxyApiClient(
     suspend fun getCurrentUserEmail(): String? {
         return authManager.getCurrentUserEmail()
     }
+
+    private val appUpdateConfigUrl: String
+        get() = baseUrl.substringBeforeLast("/") + "/app-version-config"
 }
 
 @Serializable
