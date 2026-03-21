@@ -110,7 +110,7 @@ class GachaViewModel(
                     if (proxyError?.statusCode == 429 && proxyError.rewardedEligible) {
                         _effect.send(
                             GachaContract.Effect.ShowRewardAdOffer(
-                                "오늘 무료 말씀 1회를 모두 사용했습니다. 광고를 보고 추가 1회를 받을 수 있습니다."
+                                "오늘 무료 말씀 1회를 모두 사용했습니다. 광고를 보면 보너스 1회를 받아 바로 다시 시도할 수 있습니다."
                             )
                         )
                     } else {

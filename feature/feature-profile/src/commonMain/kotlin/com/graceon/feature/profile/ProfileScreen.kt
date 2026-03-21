@@ -168,17 +168,27 @@ fun ProfileScreen(
                     title = "광고로 횟수 추가",
                     description = when {
                         isRewardLoading -> "광고를 준비하거나 보상을 반영하는 중입니다."
-                        rewardedCredits > 0 -> "광고를 시청하면 오늘 사용할 수 있는 말씀 횟수 1회가 더 늘어납니다."
-                        else -> "리워드 광고를 시청하고 말씀 횟수 1회를 추가할 수 있습니다."
+                        rewardedAvailableToday > 0 && rewardedCredits > 0 ->
+                            "보관 중인 보너스 ${rewardedCredits}회가 있습니다. 오늘 광고로 ${rewardedAvailableToday}회 더 받을 수 있어요."
+                        rewardedAvailableToday > 0 ->
+                            "리워드 광고를 시청하고 보너스 말씀 횟수 1회를 보관할 수 있습니다."
+                        rewardedCredits > 0 ->
+                            "보관 중인 보너스 ${rewardedCredits}회가 있습니다. 오늘 광고 보상은 모두 받았습니다."
+                        else -> "오늘 광고로 받을 수 있는 추가 횟수를 모두 받았습니다. 내일 다시 시도해주세요."
                     },
-                    value = if (isRewardLoading) "처리중" else "광고 보기",
-                    enabled = !isRewardLoading,
+                    value = when {
+                        isRewardLoading -> "처리중"
+                        rewardedAvailableToday > 0 -> "광고 보기"
+                        rewardedCredits > 0 -> "보관 ${rewardedCredits}회"
+                        else -> "오늘 마감"
+                    },
+                    enabled = !isRewardLoading && rewardedAvailableToday > 0,
                     onClick = {
                         coroutineScope.launch {
                             isRewardLoading = true
                             when (val result = onWatchRewardAd()) {
                                 is RewardCreditActionResult.Success -> {
-                                    snackbarHostState.showSnackbar("말씀 횟수 1회가 추가되었습니다.")
+                                    snackbarHostState.showSnackbar("보너스 말씀 횟수 1회가 보관되었습니다.")
                                 }
                                 is RewardCreditActionResult.Error -> {
                                     snackbarHostState.showSnackbar(result.message)

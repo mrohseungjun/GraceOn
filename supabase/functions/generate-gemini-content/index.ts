@@ -7,9 +7,12 @@ const corsHeaders = {
 }
 
 const DAILY_LIMIT = 1
+const REWARDED_DAILY_GRANT_LIMIT = 3
+const REWARDED_CREDIT_BALANCE_LIMIT = 3
 const DAILY_USAGE_DATE_KEY = "graceon_daily_free_generation_date"
 const DAILY_USAGE_COUNT_KEY = "graceon_daily_free_generation_count"
-const REWARDED_USAGE_DATE_KEY = "graceon_rewarded_generation_date"
+const REWARDED_GRANT_DATE_KEY = "graceon_rewarded_generation_date"
+const REWARDED_GRANT_COUNT_KEY = "graceon_rewarded_generation_grant_count"
 const REWARDED_CREDIT_COUNT_KEY = "graceon_rewarded_generation_credit_count"
 const DAILY_USAGE_TIMEZONE = "Asia/Seoul"
 
@@ -122,11 +125,27 @@ Deno.serve(async (request) => {
   }
 
   if (body.action === "grant_reward") {
+    if (usage.rewardedAvailableToday <= 0) {
+      const message =
+        usage.rewardedCredits >= REWARDED_CREDIT_BALANCE_LIMIT
+          ? `보너스 횟수는 최대 ${REWARDED_CREDIT_BALANCE_LIMIT}회까지 보관할 수 있습니다. 먼저 사용한 뒤 다시 광고를 시청해주세요.`
+          : "오늘 광고로 받을 수 있는 추가 횟수를 모두 받았습니다. 내일 다시 시도해주세요."
+
+      return Response.json(
+        { error: message },
+        { status: 429, headers: corsHeaders },
+      )
+    }
+
     const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey)
     const rewardedMetadata = {
       ...currentUserMetadata,
-      [REWARDED_USAGE_DATE_KEY]: todayInKorea(),
-      [REWARDED_CREDIT_COUNT_KEY]: usage.rewardedCredits + 1,
+      [REWARDED_GRANT_DATE_KEY]: todayInKorea(),
+      [REWARDED_GRANT_COUNT_KEY]: usage.rewardedGrantedToday + 1,
+      [REWARDED_CREDIT_COUNT_KEY]: Math.min(
+        usage.rewardedCredits + 1,
+        REWARDED_CREDIT_BALANCE_LIMIT,
+      ),
     }
 
     const { error: rewardGrantError } = await adminClient.auth.admin.updateUserById(user.id, {
@@ -146,8 +165,14 @@ Deno.serve(async (request) => {
         dailyLimit: DAILY_LIMIT,
         usedToday: usage.freeUsedToday,
         remainingToday: usage.remainingFreeToday,
-        rewardedCredits: usage.rewardedCredits + 1,
-        rewardedAvailableToday: 1,
+        rewardedCredits: Math.min(
+          usage.rewardedCredits + 1,
+          REWARDED_CREDIT_BALANCE_LIMIT,
+        ),
+        rewardedAvailableToday: Math.min(
+          REWARDED_DAILY_GRANT_LIMIT - (usage.rewardedGrantedToday + 1),
+          Math.max(REWARDED_CREDIT_BALANCE_LIMIT - (usage.rewardedCredits + 1), 0),
+        ),
       } satisfies DailyUsageStatusResponse,
       { status: 200, headers: corsHeaders },
     )
@@ -163,10 +188,15 @@ Deno.serve(async (request) => {
 
   if (usage.remainingFreeToday <= 0 && usage.rewardedCredits <= 0) {
     return Response.json(
-      {
-        error: "오늘 무료 말씀 1회를 모두 사용했습니다. 광고를 보고 추가 1회를 받을 수 있습니다.",
-        rewardedEligible: true,
-      },
+      usage.rewardedAvailableToday > 0
+        ? {
+            error: "오늘 무료 말씀 1회를 모두 사용했습니다. 광고를 보고 보너스 1회를 추가할 수 있습니다.",
+            rewardedEligible: true,
+          }
+        : {
+            error: "오늘 무료 말씀과 광고 보상을 모두 사용했습니다. 내일 다시 시도해주세요.",
+            rewardedEligible: false,
+          },
       { status: 429, headers: corsHeaders },
     )
   }
@@ -181,7 +211,6 @@ Deno.serve(async (request) => {
         }
       : {
           ...currentUserMetadata,
-          [REWARDED_USAGE_DATE_KEY]: todayInKorea(),
           [REWARDED_CREDIT_COUNT_KEY]: Math.max(usage.rewardedCredits - 1, 0),
         }
 
@@ -246,20 +275,39 @@ Deno.serve(async (request) => {
 function resolveDailyUsage(userMetadata: Record<string, unknown>) {
   const today = todayInKorea()
   const freeUsageDate = String(userMetadata[DAILY_USAGE_DATE_KEY] ?? "")
-  const rewardedUsageDate = String(userMetadata[REWARDED_USAGE_DATE_KEY] ?? "")
+  const rewardedGrantDate = String(userMetadata[REWARDED_GRANT_DATE_KEY] ?? "")
   const freeUsedToday =
     freeUsageDate === today
-      ? Number(userMetadata[DAILY_USAGE_COUNT_KEY] ?? 0)
+      ? sanitizeCount(userMetadata[DAILY_USAGE_COUNT_KEY])
       : 0
-  const rewardedCredits =
-    rewardedUsageDate === today
-      ? Number(userMetadata[REWARDED_CREDIT_COUNT_KEY] ?? 0)
+  const rewardedGrantedToday =
+    rewardedGrantDate === today
+      ? sanitizeCount(userMetadata[REWARDED_GRANT_COUNT_KEY])
       : 0
+  const rewardedCredits = sanitizeCount(userMetadata[REWARDED_CREDIT_COUNT_KEY])
+  const rewardedAvailableByDailyLimit = Math.max(
+    REWARDED_DAILY_GRANT_LIMIT - rewardedGrantedToday,
+    0,
+  )
+  const rewardedAvailableByBalance = Math.max(
+    REWARDED_CREDIT_BALANCE_LIMIT - rewardedCredits,
+    0,
+  )
 
   return {
     freeUsedToday,
     remainingFreeToday: Math.max(DAILY_LIMIT - freeUsedToday, 0),
     rewardedCredits,
-    rewardedAvailableToday: 1,
+    rewardedGrantedToday,
+    rewardedAvailableToday: Math.min(
+      rewardedAvailableByDailyLimit,
+      rewardedAvailableByBalance,
+    ),
   }
+}
+
+function sanitizeCount(value: unknown): number {
+  const parsed = Number(value ?? 0)
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0
+  return Math.floor(parsed)
 }

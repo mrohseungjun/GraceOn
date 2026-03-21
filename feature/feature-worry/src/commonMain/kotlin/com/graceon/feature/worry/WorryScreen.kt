@@ -482,11 +482,15 @@ private fun DailyUsageCard(
             )
             Text(
                 text = if (totalRemaining > 0) {
-                    "지금 바로 말씀을 받을 수 있어요."
+                    if (dailyUsage.rewardedCredits > 0) {
+                        "무료 횟수 외에 보관 중인 보너스 ${dailyUsage.rewardedCredits}회가 포함되어 있어요."
+                    } else {
+                        "지금 바로 말씀을 받을 수 있어요."
+                    }
                 } else if (dailyUsage.rewardedAvailableToday > 0) {
-                    "오늘 무료 횟수를 모두 사용했습니다. 광고를 보면 1회를 더 추가할 수 있어요."
+                    "오늘 무료 횟수를 모두 사용했습니다. 광고를 보면 보너스 1회를 보관할 수 있어요."
                 } else {
-                    "오늘 횟수를 모두 사용했습니다. 내일 다시 열립니다."
+                    "오늘 무료 횟수와 광고 보상을 모두 사용했습니다. 내일 다시 열립니다."
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
