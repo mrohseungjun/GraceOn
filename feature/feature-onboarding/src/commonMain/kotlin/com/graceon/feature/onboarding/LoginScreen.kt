@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,11 +72,14 @@ private enum class AuthLoadingAction {
 
 @Composable
 fun LoginScreen(
+    noticeMessage: String? = null,
+    onNoticeMessageShown: () -> Unit = {},
     onSignIn: suspend (String, String) -> Unit,
     onSignUp: suspend (String, String) -> Boolean,
     onGoogleLogin: suspend () -> Unit,
     onResendConfirmationEmail: suspend (String) -> Unit,
-    onSendPasswordResetEmail: suspend (String) -> Unit
+    onSendPasswordResetEmail: suspend (String) -> Unit,
+    isGoogleLoginEnabled: Boolean
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -83,6 +87,13 @@ fun LoginScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var loadingAction by remember { mutableStateOf(AuthLoadingAction.None) }
+
+    LaunchedEffect(noticeMessage) {
+        noticeMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            onNoticeMessageShown()
+        }
+    }
 
     fun validateInputs(): String? {
         if (email.isBlank() || "@" !in email) {
@@ -183,6 +194,7 @@ fun LoginScreen(
                             loadingAction = AuthLoadingAction.None
                         }
                     },
+                    isGoogleLoginEnabled = isGoogleLoginEnabled,
                     onResendConfirmationEmail = {
                         val error = validateEmailOnly()
                         if (error != null) {
@@ -248,6 +260,7 @@ private fun AuthCard(
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onGoogleLogin: () -> Unit,
+    isGoogleLoginEnabled: Boolean,
     onResendConfirmationEmail: () -> Unit,
     onSendPasswordResetEmail: () -> Unit
 ) {
@@ -294,7 +307,7 @@ private fun AuthCard(
             )
 
             Text(
-                text = "계정으로 무료 횟수, 저장한 말씀, 이후 구독 상태를 안정적으로 관리합니다.",
+                text = "계정으로 무료 횟수와 저장한 말씀을 안전하게 이어서 관리합니다.",
                 style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                 color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 23.sp
@@ -363,44 +376,46 @@ private fun AuthCard(
                 }
             }
 
-            OutlinedButton(
-                onClick = onGoogleLogin,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                enabled = !isAnyLoading,
-                shape = RoundedCornerShape(999.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant
-                ),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
-                )
-            ) {
-                if (isGoogleSigningIn) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+            if (isGoogleLoginEnabled) {
+                OutlinedButton(
+                    onClick = onGoogleLogin,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    enabled = !isAnyLoading,
+                    shape = RoundedCornerShape(999.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        androidx.compose.material3.MaterialTheme.colorScheme.outlineVariant
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
                     )
-                } else {
+                ) {
+                    if (isGoogleSigningIn) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+                        )
+                    } else {
+                        Text(
+                            text = "Google로 계속",
+                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                if (isGoogleSigningIn) {
                     Text(
-                        text = "Google로 계속",
-                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        text = "로그인 화면을 여는 중입니다. 브라우저가 열리면 Google 로그인을 완료해주세요.",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = Secondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
-            }
-
-            if (isGoogleSigningIn) {
-                Text(
-                    text = "로그인 화면을 여는 중입니다. 브라우저가 열리면 Google 로그인을 완료해주세요.",
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = Secondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
 
             if (mode == AuthMode.SignUp) {

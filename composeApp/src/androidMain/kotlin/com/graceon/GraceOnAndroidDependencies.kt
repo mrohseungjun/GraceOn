@@ -74,6 +74,11 @@ internal fun createGraceOnAndroidDependencies(
                 context.startActivity(intent)
             }
         },
+        isGoogleSignInAvailable = true,
+        deleteAccount = {
+            proxyApiClient.deleteAccount()
+            savedPrescriptionRepository.clearAll()
+        },
         getCurrentUserEmail = {
             proxyApiClient.getCurrentUserEmail()
         },

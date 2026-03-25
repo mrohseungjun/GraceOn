@@ -30,6 +30,8 @@ internal data class GraceOnDependencies(
     val resendConfirmationEmail: suspend (String) -> Unit,
     val sendPasswordResetEmail: suspend (String) -> Unit,
     val signInWithGoogle: suspend () -> Unit,
+    val isGoogleSignInAvailable: Boolean,
+    val deleteAccount: suspend () -> Unit,
     val getCurrentUserEmail: suspend () -> String?,
     val getAppUpdateConfig: suspend (AppPlatform) -> Result<AppUpdateConfig>,
     val logout: suspend () -> Unit

@@ -23,12 +23,15 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material.icons.filled.PlayCircleOutline
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +71,8 @@ fun ProfileScreen(
     onToggleDailyVerseNotification: (Boolean) -> Unit,
     onToggleDarkTheme: (Boolean) -> Unit,
     onWatchRewardAd: suspend () -> RewardCreditActionResult,
+    onDeleteAccount: suspend () -> Unit,
+    onDeleteAccountCompleted: () -> Unit,
     onLogout: () -> Unit,
     onNavigateHome: () -> Unit,
     onNavigateToWord: () -> Unit,
@@ -76,6 +81,9 @@ fun ProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var isRewardLoading by remember { mutableStateOf(false) }
+    var isDeleteAccountLoading by remember { mutableStateOf(false) }
+    var showDeleteAccountConfirm by remember { mutableStateOf(false) }
+    var showDeleteAccountCompleted by remember { mutableStateOf(false) }
 
     GraceOnScaffold(
         title = "마이",
@@ -134,6 +142,24 @@ fun ProfileScreen(
                     description = "현재 세션을 종료하고 로그인 화면으로 돌아갑니다.",
                     value = "",
                     onClick = onLogout
+                )
+                PreferenceCard(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.WarningAmber,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    title = "계정 삭제",
+                    description = if (isDeleteAccountLoading) {
+                        "계정을 삭제하는 중입니다. 잠시만 기다려주세요."
+                    } else {
+                        "계정과 서버에 저장된 사용 정보, 기기에 보관된 저장 말씀을 모두 삭제합니다."
+                    },
+                    value = if (isDeleteAccountLoading) "삭제중" else "삭제",
+                    enabled = !isDeleteAccountLoading,
+                    onClick = { showDeleteAccountConfirm = true }
                 )
                 SectionLabel("앱 설정")
                 PreferenceCard(
@@ -211,6 +237,71 @@ fun ProfileScreen(
                     .padding(horizontal = 20.dp, vertical = 18.dp)
             )
         }
+    }
+
+    if (showDeleteAccountConfirm) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isDeleteAccountLoading) {
+                    showDeleteAccountConfirm = false
+                }
+            },
+            title = { Text("계정을 삭제할까요?") },
+            text = {
+                Text("삭제 후에는 계정을 복구할 수 없으며, 저장한 말씀과 로그인 정보도 기기에서 함께 제거됩니다.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            isDeleteAccountLoading = true
+                            runCatching { onDeleteAccount() }
+                                .onSuccess {
+                                    showDeleteAccountConfirm = false
+                                    showDeleteAccountCompleted = true
+                                }
+                                .onFailure { throwable ->
+                                    snackbarHostState.showSnackbar(
+                                        throwable.message ?: "계정을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요."
+                                    )
+                                }
+                            isDeleteAccountLoading = false
+                        }
+                    },
+                    enabled = !isDeleteAccountLoading
+                ) {
+                    Text("삭제")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteAccountConfirm = false },
+                    enabled = !isDeleteAccountLoading
+                ) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    if (showDeleteAccountCompleted) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("계정 삭제 완료") },
+            text = {
+                Text("계정이 삭제되었습니다. 확인을 누르면 로그인 화면으로 돌아갑니다.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteAccountCompleted = false
+                        onDeleteAccountCompleted()
+                    }
+                ) {
+                    Text("확인")
+                }
+            }
+        )
     }
 }
 

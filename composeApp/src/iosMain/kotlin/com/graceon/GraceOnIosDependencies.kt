@@ -66,6 +66,11 @@ internal fun createGraceOnIosDependencies(
         signInWithGoogle = {
             proxyApiClient.signInWithGoogle(openUrl)
         },
+        isGoogleSignInAvailable = false,
+        deleteAccount = {
+            proxyApiClient.deleteAccount()
+            savedPrescriptionRepository.clearAll()
+        },
         getCurrentUserEmail = {
             proxyApiClient.getCurrentUserEmail()
         },

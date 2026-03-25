@@ -64,4 +64,8 @@ class SavedPrescriptionRepositoryImpl(
     override suspend fun isPrescriptionSaved(verse: String): Boolean {
         return getSavedPrescriptions().first().any { it.verse == verse }
     }
+
+    suspend fun clearAll() {
+        storage.updatePrescriptionsJson("[]")
+    }
 }

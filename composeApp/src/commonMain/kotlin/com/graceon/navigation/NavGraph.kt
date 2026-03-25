@@ -106,6 +106,7 @@ internal fun NavGraph(
     var profileUsedToday by remember { mutableStateOf(0) }
     var profileRewardedCredits by remember { mutableStateOf(0) }
     var profileRewardedAvailableToday by remember { mutableStateOf(0) }
+    var loginNoticeMessage by remember { mutableStateOf<String?>(null) }
 
     suspend fun refreshProfileRewardUsage() {
         when (val result = dependencies.getDailyFreeUsageUseCase()) {
@@ -203,6 +204,8 @@ internal fun NavGraph(
         when (entry) {
             NavEntry.Login -> {
                 LoginScreen(
+                    noticeMessage = loginNoticeMessage,
+                    onNoticeMessageShown = { loginNoticeMessage = null },
                     onSignIn = { email, password ->
                         dependencies.signInWithEmail(email, password)
                         onLoginComplete()
@@ -226,7 +229,8 @@ internal fun NavGraph(
                     },
                     onSendPasswordResetEmail = { email ->
                         dependencies.sendPasswordResetEmail(email)
-                    }
+                    },
+                    isGoogleLoginEnabled = dependencies.isGoogleSignInAvailable
                 )
             }
 
@@ -365,6 +369,14 @@ internal fun NavGraph(
                                 RewardCreditActionResult.Error(adResult.message)
                             }
                         }
+                    },
+                    onDeleteAccount = {
+                        dependencies.deleteAccount()
+                    },
+                    onDeleteAccountCompleted = {
+                        loginNoticeMessage = "계정이 삭제되었습니다."
+                        replaceRoot(NavEntry.Login)
+                        onLogout()
                     },
                     onLogout = {
                         replaceRoot(NavEntry.Login)

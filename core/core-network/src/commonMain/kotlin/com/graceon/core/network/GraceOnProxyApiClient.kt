@@ -181,6 +181,39 @@ class GraceOnProxyApiClient(
         return response.body()
     }
 
+    suspend fun deleteAccount() {
+        require(baseUrl.isNotBlank()) {
+            "GraceOn proxy URL is missing. Configure GRACEON_API_BASE_URL for this platform."
+        }
+
+        require(supabaseAnonKey.isNotBlank()) {
+            "Supabase anon key is missing. Configure SUPABASE_ANON_KEY for this platform."
+        }
+
+        suspend fun performRequest(accessToken: String) = client.post(deleteAccountUrl) {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("apikey", supabaseAnonKey)
+            header(HttpHeaders.Authorization, "Bearer $accessToken")
+        }
+
+        var response = performRequest(authManager.getAccessToken())
+
+        if (response.status.value == 401) {
+            authManager.resetSession()
+            response = performRequest(authManager.getAccessToken())
+        }
+
+        if (!response.status.isSuccess()) {
+            val errorPayload = runCatching { response.body<ProxyErrorResponse>() }.getOrNull()
+            throw GraceOnProxyException(
+                message = errorPayload?.error ?: "GraceOn account deletion request failed",
+                statusCode = response.status.value
+            )
+        }
+
+        authManager.resetSession()
+    }
+
     fun close() {
         client.close()
     }
@@ -215,6 +248,9 @@ class GraceOnProxyApiClient(
 
     private val appUpdateConfigUrl: String
         get() = baseUrl.substringBeforeLast("/") + "/app-version-config"
+
+    private val deleteAccountUrl: String
+        get() = baseUrl.substringBeforeLast("/") + "/delete-account"
 }
 
 @Serializable
